@@ -15,6 +15,9 @@ The prefix of esy folder
 ## Example usage
 
 ```
+- uses: actions/setup-node@v1.4.2
+  with:
+    node-version: 12
 - name: Install esy
   run: npm install -g esy
 - uses: wokalski/esy-github-action@v1
