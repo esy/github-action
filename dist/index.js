@@ -38869,11 +38869,16 @@ const main = async () => {
         const platform = os.platform();
         const installPath = ["~/.esy/source"];
         const installKey = `source-${platform}-${cacheKey}`;
+        core.startGroup("Restoring install cache");
         const installCacheKey = await cache.restoreCache(installPath, installKey, []);
         if (installCacheKey) {
             console.log("Restored the install cache");
         }
+        core.endGroup();
         run("Run esy install", "esy install");
+        if (!installCacheKey) {
+            await cache.saveCache(installPath, installKey);
+        }
         const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
         const esy3 = fs
             .readdirSync(ESY_FOLDER)
@@ -38886,19 +38891,22 @@ const main = async () => {
             `build-${platform}-`,
             `build-`,
         ];
+        core.startGroup("Restoring build cache");
         const buildCacheKey = await cache.restoreCache(depsPath, buildKey, restoreKeys);
+        if (buildCacheKey) {
+            console.log("Restored the build cache");
+        }
+        core.endGroup();
         if (!buildCacheKey) {
             run("Run esy build-dependencies", "esy build-dependencies");
         }
-        else {
-            console.log("Restored the build cache");
-        }
         run("Run esy build", "esy build");
+        if (!buildCacheKey) {
+            await cache.saveCache(depsPath, buildKey);
+        }
         if (!buildCacheKey) {
             run("Run esy cleanup", "esy cleanup .");
         }
-        await cache.saveCache(installPath, installKey);
-        await cache.saveCache(depsPath, buildKey);
     }
     catch (e) {
         core.setFailed(e.message);
