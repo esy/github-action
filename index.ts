@@ -19,7 +19,10 @@ const main = async () => {
     const platform = os.platform();
     const installPath = ["~/.esy/source"];
     const installKey = `source-${platform}-${cacheKey}`;
-    await cache.restoreCache(installPath, installKey, []);
+    const installCacheKey = await cache.restoreCache(installPath, installKey, []);
+    if (installCacheKey) {
+      console.log("Restored the install cache")
+    }
     
     run("Run esy install", "esy install");
     
@@ -41,6 +44,8 @@ const main = async () => {
     
     if (!buildCacheKey) {
       run("Run esy build-dependencies", "esy build-dependencies");
+    } else {
+      console.log("Restored the build cache")
     }
     
     run("Run esy build", "esy build");
@@ -49,10 +54,8 @@ const main = async () => {
       run("Run esy cleanup", "esy cleanup .");
     }
     
-    await Promise.all([
-      cache.saveCache(installPath, installKey),
-      cache.saveCache(depsPath, buildKey)
-    ]);
+    await cache.saveCache(installPath, installKey);
+    await cache.saveCache(depsPath, buildKey);
   } catch (e) {
     core.setFailed(e.message);
   }
