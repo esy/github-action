@@ -15,7 +15,7 @@ const run = (name: string, command: string) => {
 };
 
 try {
-  const ESY_FOLDER = esyPrefix ?? path.join(os.homedir(), ".esy");
+  const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
   const esy3 = fs
     .readdirSync(ESY_FOLDER)
     .filter((name: string) => name.length > 0 && name[0] === "3")
