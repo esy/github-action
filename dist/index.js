@@ -38879,7 +38879,7 @@ const main = async () => {
         }
         core.endGroup();
         run("Run esy install", "esy install");
-        if (!installCacheKey) {
+        if (installCacheKey != installKey) {
             await cache.saveCache(installPath, installKey);
         }
         const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
@@ -38904,7 +38904,7 @@ const main = async () => {
             run("Run esy build-dependencies", "esy build-dependencies");
         }
         run("Run esy build", "esy build");
-        if (!buildCacheKey) {
+        if (buildCacheKey != buildKey) {
             await cache.saveCache(depsPath, buildKey);
         }
         if (!buildCacheKey) {

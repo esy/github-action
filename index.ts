@@ -33,7 +33,7 @@ const main = async () => {
     
     run("Run esy install", "esy install");
     
-    if (!installCacheKey) {
+    if (installCacheKey != installKey) {
       await cache.saveCache(installPath, installKey);
     }
 
@@ -63,8 +63,8 @@ const main = async () => {
     } 
     
     run("Run esy build", "esy build");
-    
-    if (!buildCacheKey) {
+   
+    if (buildCacheKey != buildKey) {
       await cache.saveCache(depsPath, buildKey);
     }
 
