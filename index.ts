@@ -21,10 +21,7 @@ const main = async () => {
     const installKey = `source-${platform}-${cacheKey}`;
     await cache.restoreCache(installPath, installKey, []);
     
-    run("Install esy", "sudo npm install -g esy");
     run("Run esy install", "esy install");
-
-    console.log("WTF");
     
     const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
     const esy3 = fs

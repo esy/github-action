@@ -15,7 +15,9 @@ The prefix of esy folder
 ## Example usage
 
 ```
-uses: wokalski/esy-github-action@v1
-with:
+- name: Install esy
+  run: npm install -g esy
+- uses: wokalski/esy-github-action@v1
+  with:
   cache-key: ${{ hashFiles('**/index.json') }}
 ```

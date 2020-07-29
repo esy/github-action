@@ -7,6 +7,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     steps:
+      - name: Install esy
+        run: npm install -g esy
       - name: Create esy.json
         run: |
           echo ' \
