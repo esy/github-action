@@ -21,7 +21,7 @@ const main = async () => {
     const installKey = `source-${platform}-${cacheKey}`;
     await cache.restoreCache(installPath, installKey, []);
     
-    run("Install esy", "npm install -g esy");
+    run("Install esy", "sudo npm install -g esy");
     run("Run esy install", "esy install");
 
     console.log("WTF");
