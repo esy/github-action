@@ -38849,64 +38849,59 @@ exports.SearchState = SearchState;
 /***/ 731:
 /***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
 
-System.register([], function (exports_1, context_1) {
-    "use strict";
-    var fs, path, cache, os, execSync, core, esyPrefix, cacheKey, run;
-    var __moduleName = context_1 && context_1.id;
-    return {
-        setters: [],
-        execute: async function () {
-            fs = __webpack_require__(747);
-            path = __webpack_require__(622);
-            cache = __webpack_require__(692);
-            os = __webpack_require__(87);
-            execSync = __webpack_require__(129).execSync;
-            core = __webpack_require__(470);
-            esyPrefix = core.getInput('esy-prefix');
-            cacheKey = core.getInput('cache-key');
-            run = (name, command) => {
-                core.startGroup(name);
-                execSync(command, { stdio: "inherit" });
-                core.endGroup();
-            };
-            try {
-                const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
-                const esy3 = fs
-                    .readdirSync(ESY_FOLDER)
-                    .filter((name) => name.length > 0 && name[0] === "3")
-                    .sort()
-                    .pop();
-                const platform = os.platform();
-                const installPath = ["~/.esy/source"];
-                const installKey = `source-${platform}-${cacheKey}`;
-                await cache.restoreCache(installPath, installKey, []);
-                run("Install esy", "npm install -g esy");
-                run("Run esy install", "esy install");
-                const depsPath = [path.join(ESY_FOLDER, esy3, "i")];
-                const buildKey = `build-${platform}-${cacheKey}`;
-                const restoreKeys = [
-                    `build-${platform}-`,
-                    `build-`,
-                ];
-                const buildCacheKey = await cache.restoreCache(depsPath, buildKey, restoreKeys);
-                if (!buildCacheKey) {
-                    run("Run esy build-dependencies", "esy build-dependencies");
-                }
-                run("Run esy build", "esy build");
-                if (!buildCacheKey) {
-                    run("Run esy cleanup", "esy cleanup .");
-                }
-                await Promise.all([
-                    cache.saveCache(installPath, installKey),
-                    cache.saveCache(depsPath, buildKey)
-                ]);
-            }
-            catch (e) {
-                core.setFailed(e.message);
-            }
+"use strict";
+
+const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
+const cache = __webpack_require__(692);
+const os = __webpack_require__(87);
+const { execSync } = __webpack_require__(129);
+const core = __webpack_require__(470);
+const esyPrefix = core.getInput('esy-prefix');
+const cacheKey = core.getInput('cache-key');
+const run = (name, command) => {
+    core.startGroup(name);
+    execSync(command, { stdio: "inherit" });
+    core.endGroup();
+};
+const main = async () => {
+    try {
+        const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
+        const esy3 = fs
+            .readdirSync(ESY_FOLDER)
+            .filter((name) => name.length > 0 && name[0] === "3")
+            .sort()
+            .pop();
+        const platform = os.platform();
+        const installPath = ["~/.esy/source"];
+        const installKey = `source-${platform}-${cacheKey}`;
+        await cache.restoreCache(installPath, installKey, []);
+        run("Install esy", "npm install -g esy");
+        run("Run esy install", "esy install");
+        const depsPath = [path.join(ESY_FOLDER, esy3, "i")];
+        const buildKey = `build-${platform}-${cacheKey}`;
+        const restoreKeys = [
+            `build-${platform}-`,
+            `build-`,
+        ];
+        const buildCacheKey = await cache.restoreCache(depsPath, buildKey, restoreKeys);
+        if (!buildCacheKey) {
+            run("Run esy build-dependencies", "esy build-dependencies");
         }
-    };
-});
+        run("Run esy build", "esy build");
+        if (!buildCacheKey) {
+            run("Run esy cleanup", "esy cleanup .");
+        }
+        await Promise.all([
+            cache.saveCache(installPath, installKey),
+            cache.saveCache(depsPath, buildKey)
+        ]);
+    }
+    catch (e) {
+        core.setFailed(e.message);
+    }
+};
+main();
 
 
 /***/ }),
