@@ -38866,6 +38866,9 @@ const run = (name, command) => {
 };
 const main = async () => {
     try {
+        const workingDirectory = core.getInput('working-directory') || process.cwd();
+        fs.statSync(workingDirectory);
+        process.chdir(workingDirectory);
         const platform = os.platform();
         const installPath = ["~/.esy/source"];
         const installKey = `source-${platform}-${cacheKey}`;

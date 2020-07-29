@@ -12,6 +12,10 @@ This action runs cached `esy install` and `esy build` in the current directory
 
 The prefix of esy folder
 
+### `working-directory`
+
+Working directory.
+
 ## Example usage
 
 ```

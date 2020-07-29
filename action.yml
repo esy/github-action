@@ -4,6 +4,9 @@ inputs:
   cache-key:
     description: 'A cache key for esy.json/esy.lock.'
     required: true
+  working-directory:
+    description: 'Working directory for esy'
+    required: false
   esy-prefix:
     description: 'Prefix of esy folder'
     required: false
