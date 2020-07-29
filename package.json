@@ -5,10 +5,16 @@
   "author": "Wojtek Czekalski <me@wczekalski.com>",
   "license": "MIT",
   "private": false,
+  "scripts": {
+    "package": "ncc build index.ts"
+  },
   "dependencies": {
     "@actions/cache": "^1.0.1",
     "@actions/core": "^1.2.4",
     "@actions/github": "^4.0.0",
     "typescript": "^3.9.7"
+  },
+  "devDependencies": {
+    "@zeit/ncc": "^0.22.3"
   }
 }
