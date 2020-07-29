@@ -1,0 +1,12 @@
+name: 'Esy Github Action'
+description: 'Run cached esy install and esy build'
+inputs:
+  cache-key:
+    description: 'A cache key for esy.json/esy.lock.'
+    required: true
+  esy-prefix:
+    description: 'Prefix of esy folder'
+    required: false
+runs:
+  using: 'node12'
+  main: 'index.ts'
