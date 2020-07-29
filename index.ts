@@ -16,13 +16,6 @@ const run = (name: string, command: string) => {
 
 const main = async () => {
   try {
-    const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
-    const esy3 = fs
-      .readdirSync(ESY_FOLDER)
-      .filter((name: string) => name.length > 0 && name[0] === "3")
-      .sort()
-      .pop();
-    
     const platform = os.platform();
     const installPath = ["~/.esy/source"];
     const installKey = `source-${platform}-${cacheKey}`;
@@ -30,6 +23,13 @@ const main = async () => {
     
     run("Install esy", "npm install -g esy");
     run("Run esy install", "esy install");
+    
+    const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
+    const esy3 = fs
+      .readdirSync(ESY_FOLDER)
+      .filter((name: string) => name.length > 0 && name[0] === "3")
+      .sort()
+      .pop();
     
     const depsPath = [path.join(ESY_FOLDER, esy3, "i")];
     const buildKey = `build-${platform}-${cacheKey}`;
