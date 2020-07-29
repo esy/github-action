@@ -14,13 +14,13 @@ jobs:
         run: npm install -g esy
       - name: Create esy.json
         run: |
-          echo ' \
-            {\
-              "name": "test", \
-              "dependencies": { \
-                "ocaml": "4.10.0" \
-              } \
-            } \
+          echo '
+            {
+              "name": "test",
+              "dependencies": {
+                "ocaml": "4.10.0"
+              }
+            }
           ' > esy.json
       - name: Run esy action
         uses: wokalski/esy-github-action@v1
