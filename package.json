@@ -1,0 +1,14 @@
+{
+  "name": "esy-github-action",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Wojtek Czekalski <me@wczekalski.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "@actions/cache": "^1.0.1",
+    "@actions/core": "^1.2.4",
+    "@actions/github": "^4.0.0",
+    "typescript": "^3.9.7"
+  }
+}
