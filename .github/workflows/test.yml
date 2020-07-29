@@ -2,6 +2,10 @@ on: [push]
 
 jobs:
   test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     steps:
       - name: Create esy.json
         run: |
