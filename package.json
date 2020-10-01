@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@actions/cache": "^1.0.1",
-    "@actions/core": "^1.2.4",
+    "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
     "typescript": "^3.9.7"
   },
