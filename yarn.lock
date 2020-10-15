@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@actions/cache@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@actions/cache/-/cache-1.0.1.tgz#f32be88cefe2f1501cdcb3bf7dd81c59b77b21f2"
-  integrity sha512-QyMKGZTVB6bRBIMNEoW74LeqYtbY7cSaWNvaT1uqhzjredaW+vNFxv9XF/cyipzwZBVZgizOF2zpdVYnP0UVYg==
+"@actions/cache@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@actions/cache/-/cache-1.0.2.tgz#a223dcc752c7f988016d28ee7232f930f85cec61"
+  integrity sha512-CzAseaJ4cKmOI58EIWUb/LfeYdM7Y25s39OEMtWAhEPrPPzrbSEjGHCLaYjJ0V8C4iojo8vBYh5B3OIJ37EiJw==
   dependencies:
     "@actions/core" "^1.2.4"
     "@actions/exec" "^1.0.1"
@@ -17,19 +17,19 @@
     semver "^6.1.0"
     uuid "^3.3.3"
 
-"@actions/core@^1.2.0", "@actions/core@^1.2.4", "@actions/core@^1.2.6":
+"@actions/core@1.2.6", "@actions/core@^1.2.0", "@actions/core@^1.2.4":
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/@actions/core/-/core-1.2.6.tgz#a78d49f41a4def18e88ce47c2cac615d5694bf09"
   integrity sha512-ZQYitnqiyBc3D+k7LsgSBmMDVkOVidaagDG7j3fOym77jNunWRuYx7VSHa9GNfFZh+zh61xsCjRj4JxMZlDqTA==
 
-"@actions/exec@^1.0.1":
+"@actions/exec@1.0.4", "@actions/exec@^1.0.1":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@actions/exec/-/exec-1.0.4.tgz#99d75310e62e59fc37d2ee6dcff6d4bffadd3a5d"
   integrity sha512-4DPChWow9yc9W3WqEbUj8Nr86xkpyE29ZzWjXucHItclLbEW6jr80Zx4nqv18QL6KK65+cifiQZXvnqgTV6oHw==
   dependencies:
     "@actions/io" "^1.0.1"
 
-"@actions/github@^4.0.0":
+"@actions/github@4.0.0":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/@actions/github/-/github-4.0.0.tgz#d520483151a2bf5d2dc9cd0f20f9ac3a2e458816"
   integrity sha512-Ej/Y2E+VV6sR9X7pWL5F3VgEWrABaT292DRqRU6R4hnQjPtC/zD3nagxVdXWiRQvYDh8kHXo7IDmG42eJ/dOMA==
@@ -285,10 +285,10 @@
   dependencies:
     "@types/node" "*"
 
-"@zeit/ncc@^0.22.3":
-  version "0.22.3"
-  resolved "https://registry.yarnpkg.com/@zeit/ncc/-/ncc-0.22.3.tgz#fca6b86b4454ce7a7e1e7e755165ec06457f16cd"
-  integrity sha512-jnCLpLXWuw/PAiJiVbLjA8WBC0IJQbFeUwF4I9M+23MvIxTxk5pD4Q8byQBSPmHQjz5aBoA7AKAElQxMpjrCLQ==
+"@vercel/ncc@0.24.1":
+  version "0.24.1"
+  resolved "https://registry.yarnpkg.com/@vercel/ncc/-/ncc-0.24.1.tgz#3ea2932c85ba87f4de6fe550d60e1bf5c005985e"
+  integrity sha512-r9m7brz2hNmq5TF3sxrK4qR/FhXn44XIMglQUir4sT7Sh5GOaYXlMYikHFwJStf8rmQGTlvOoBXt4yHVonRG8A==
 
 abort-controller@^3.0.0:
   version "3.0.0"
@@ -411,6 +411,11 @@ once@^1.4.0:
   dependencies:
     wrappy "1"
 
+prettier@2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.1.2.tgz#3050700dae2e4c8b67c4c3f666cdb8af405e1ce5"
+  integrity sha512-16c7K+x4qVlJg9rEbXl7HEGmQyZlG4R9AgP+oHKRMsMsuk8s+ATStlf1NpDqyBI1HpVyfjLOeMhH2LvuNvV5Vg==
+
 process@^0.11.10:
   version "0.11.10"
   resolved "https://registry.yarnpkg.com/process/-/process-0.11.10.tgz#7332300e840161bda3e69a1d1d91a7d4bc16f182"
@@ -469,10 +474,10 @@ tunnel@0.0.6, tunnel@^0.0.6:
   resolved "https://registry.yarnpkg.com/tunnel/-/tunnel-0.0.6.tgz#72f1314b34a5b192db012324df2cc587ca47f92c"
   integrity sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==
 
-typescript@^3.9.7:
-  version "3.9.7"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.7.tgz#98d600a5ebdc38f40cb277522f12dc800e9e25fa"
-  integrity sha512-BLbiRkiBzAwsjut4x/dsibSTB6yWpwT5qWmC2OfuCg3GgVQCSgMs4vEctYPhsaGtd0AeuuHMkjZ2h2WG8MSzRw==
+typescript@4.0.3:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.0.3.tgz#153bbd468ef07725c1df9c77e8b453f8d36abba5"
+  integrity sha512-tEu6DGxGgRJPb/mVPIZ48e69xCn2yRmCgYmDugAVwmJ6o+0u1RI18eO7E7WBTLYLaEVVOhwQmcdhQHweux/WPg==
 
 universal-user-agent@^6.0.0:
   version "6.0.0"

@@ -1,23 +1,24 @@
-const fs = require("fs");
-const path = require("path");
-const cache = require("@actions/cache");
-const os = require('os');
-const { execSync } = require('child_process');
-const core = require('@actions/core');
+import * as cache from "@actions/cache";
+import * as core from "@actions/core";
+import { exec } from "@actions/exec";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
-const esyPrefix = core.getInput('esy-prefix');
-const cacheKey = core.getInput('cache-key');
+const esyPrefix = core.getInput("esy-prefix");
+const cacheKey = core.getInput("cache-key");
 
-const run = (name: string, command: string) => {
+async function run(name: string, command: string, args: string[]) {
+  const PATH = process.env.PATH ? process.env.PATH : "";
   core.startGroup(name);
-  execSync(command, { stdio: "inherit"});
+  await exec(command, args, { env: { ...process.env, PATH } });
   core.endGroup();
-};
+}
 
-const main = async () => {
+async function main() {
   try {
-
-    const workingDirectory = core.getInput('working-directory') || process.cwd();
+    const workingDirectory =
+      core.getInput("working-directory") || process.cwd();
     fs.statSync(workingDirectory);
     process.chdir(workingDirectory);
 
@@ -25,14 +26,18 @@ const main = async () => {
     const installPath = ["~/.esy/source"];
     const installKey = `source-${platform}-${cacheKey}`;
     core.startGroup("Restoring install cache");
-    const installCacheKey = await cache.restoreCache(installPath, installKey, []);
+    const installCacheKey = await cache.restoreCache(
+      installPath,
+      installKey,
+      []
+    );
     if (installCacheKey) {
-      console.log("Restored the install cache")
+      console.log("Restored the install cache");
     }
     core.endGroup();
-    
-    run("Run esy install", "esy install");
-    
+
+    await run("Run esy install", "esy", ["install"]);
+
     if (installCacheKey != installKey) {
       await cache.saveCache(installPath, installKey);
     }
@@ -43,37 +48,38 @@ const main = async () => {
       .filter((name: string) => name.length > 0 && name[0] === "3")
       .sort()
       .pop();
-    
-    const depsPath = [path.join(ESY_FOLDER, esy3, "i")];
+
+    const depsPath = [path.join(ESY_FOLDER, esy3!, "i")];
     const buildKey = `build-${platform}-${cacheKey}`;
-    const restoreKeys = [
-      `build-${platform}-`,
-      `build-`,
-    ];
-    
+    const restoreKeys = [`build-${platform}-`, `build-`];
+
     core.startGroup("Restoring build cache");
-    const buildCacheKey = await cache.restoreCache(depsPath, buildKey, restoreKeys);
+    const buildCacheKey = await cache.restoreCache(
+      depsPath,
+      buildKey,
+      restoreKeys
+    );
     if (buildCacheKey) {
-      console.log("Restored the build cache")
+      console.log("Restored the build cache");
     }
     core.endGroup();
-    
+
     if (!buildCacheKey) {
-      run("Run esy build-dependencies", "esy build-dependencies");
-    } 
-    
-    run("Run esy build", "esy build");
-   
+      await run("Run esy build-dependencies", "esy", ["build-dependencies"]);
+    }
+
+    await run("Run esy build", "esy", ["build"]);
+
     if (buildCacheKey != buildKey) {
       await cache.saveCache(depsPath, buildKey);
     }
 
     if (!buildCacheKey) {
-      run("Run esy cleanup", "esy cleanup .");
+      await run("Run esy cleanup", "esy", ["cleanup", "."]);
     }
   } catch (e) {
     core.setFailed(e.message);
   }
-};
+}
 
 main();
