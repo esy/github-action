@@ -1,6 +1,6 @@
 #!/bin/sh
 
-yarn package
+yarn build
 git add -A
 git commit -m "$1"
 git tag -a -f -m "$2" v1

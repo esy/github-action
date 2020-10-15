@@ -1,0 +1,68 @@
+name: Main workflow
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+
+      - name: Install npm packages
+        run: yarn --frozen-lockfile
+
+      - name: Ensure dist directory is up-to-date
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          yarn build
+          if [ "$(git status dist --porcelain | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff
+            exit 1
+          fi
+
+      - name: Check formatting
+        run: yarn fmt:check
+
+      - name: Check type
+        run: yarn typecheck
+
+      - name: Install esy
+        run: npm install -g esy
+
+      - name: Create esy.json
+        run: |
+          echo '
+            {
+              "name": "test",
+              "dependencies": {
+                "ocaml": "4.10.0"
+              }
+            }
+          ' > esy.json
+
+      - name: Run esy action
+        uses: ./
+        with:
+          cache-key: ${{ hashFiles('esy.json') }}
+
+      - name: Check if _esy exists
+        run: stat _esy

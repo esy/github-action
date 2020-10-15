@@ -1,18 +1,18 @@
-name: 'Esy Github Action'
-description: 'Run cached esy install and esy build'
+name: esy - Github Action
+description: Run cached esy install and esy build
 inputs:
   cache-key:
-    description: 'A cache key for esy.json/esy.lock.'
+    description: A cache key for esy.json/esy.lock.
     required: true
   working-directory:
-    description: 'Working directory for esy'
+    description: Working directory for esy
     required: false
   esy-prefix:
-    description: 'Prefix of esy folder'
+    description: Prefix of esy folder
     required: false
 runs:
-  using: 'node12'
-  main: 'dist/index.js'
+  using: node12
+  main: dist/index.js
 branding:
-  icon: 'package'
-  color: 'red'
+  icon: package
+  color: red

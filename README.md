@@ -4,7 +4,8 @@ This action runs cached `esy install` and `esy build` in the current directory
 
 ## Inputs
 
-- `cache-key`: **Required** The cache key. Typically `${{ hashFiles('esy.lock/index.json') }}`
+- `cache-key`: **Required** The cache key. Typically
+  `${{ hashFiles('esy.lock/index.json') }}`
 - `esy-prefix`: The prefix of esy folder
 - `working-directory`: Working directory.
 
