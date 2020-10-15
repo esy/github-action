@@ -18,5 +18,5 @@ This action runs cached `esy install` and `esy build` in the current directory
   run: npm install -g esy
 - uses: esy/github-action@v1
   with:
-  cache-key: ${{ hashFiles('esy.lock/index.json') }}
+    cache-key: ${{ hashFiles('esy.lock/index.json') }}
 ```
