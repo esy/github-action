@@ -10,6 +10,9 @@ inputs:
   esy-prefix:
     description: Prefix of esy folder
     required: false
+  manifest:
+    description: JSON or opam file to be used
+    required: false
 runs:
   using: node12
   main: dist/index.js
