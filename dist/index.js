@@ -48535,7 +48535,7 @@ function main() {
                     _a.sent();
                     _a.label = 10;
                 case 10:
-                    if (!!buildCacheKey) return [3 /*break*/, 12];
+                    if (!(!manifestKey && !buildCacheKey)) return [3 /*break*/, 12];
                     return [4 /*yield*/, run("Run esy cleanup", "esy", ["cleanup", "."])];
                 case 11:
                     _a.sent();

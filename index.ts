@@ -78,7 +78,8 @@ async function main() {
       await cache.saveCache(depsPath, buildKey);
     }
 
-    if (!buildCacheKey) {
+    // TODO: support cleanup + manifest
+    if (!manifestKey && !buildCacheKey) {
       await run("Run esy cleanup", "esy", ["cleanup", "."]);
     }
   } catch (e) {
