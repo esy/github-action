@@ -16,7 +16,7 @@ async function run(name: string, command: string, args: string[]) {
   core.endGroup();
 }
 function runEsyCommand(name: string, args: string[]) {
-  return run(name, "esy", manifestKey ? ["-P", manifestKey, ...args] : args);
+  return run(name, "esy", manifestKey ? [`@${manifestKey}`, ...args] : args);
 }
 
 async function main() {
