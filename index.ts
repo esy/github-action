@@ -7,12 +7,16 @@ import * as path from "path";
 
 const esyPrefix = core.getInput("esy-prefix");
 const cacheKey = core.getInput("cache-key");
+const manifestKey = core.getInput("manifest");
 
 async function run(name: string, command: string, args: string[]) {
   const PATH = process.env.PATH ? process.env.PATH : "";
   core.startGroup(name);
   await exec(command, args, { env: { ...process.env, PATH } });
   core.endGroup();
+}
+function runEsyCommand(name: string, args: string[]) {
+  return run(name, "esy", manifestKey ? [`@${manifestKey}`, ...args] : args);
 }
 
 async function main() {
@@ -36,7 +40,7 @@ async function main() {
     }
     core.endGroup();
 
-    await run("Run esy install", "esy", ["install"]);
+    await runEsyCommand("Run esy install", ["install"]);
 
     if (installCacheKey != installKey) {
       await cache.saveCache(installPath, installKey);
@@ -65,16 +69,17 @@ async function main() {
     core.endGroup();
 
     if (!buildCacheKey) {
-      await run("Run esy build-dependencies", "esy", ["build-dependencies"]);
+      await runEsyCommand("Run esy build-dependencies", ["build-dependencies"]);
     }
 
-    await run("Run esy build", "esy", ["build"]);
+    await runEsyCommand("Run esy build", ["build"]);
 
     if (buildCacheKey != buildKey) {
       await cache.saveCache(depsPath, buildKey);
     }
 
-    if (!buildCacheKey) {
+    // TODO: support cleanup + manifest
+    if (!manifestKey && !buildCacheKey) {
       await run("Run esy cleanup", "esy", ["cleanup", "."]);
     }
   } catch (e) {

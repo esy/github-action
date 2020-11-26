@@ -48437,6 +48437,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 exports.__esModule = true;
 var cache = __webpack_require__(7799);
 var core = __webpack_require__(2186);
@@ -48446,6 +48453,7 @@ var os = __webpack_require__(2087);
 var path = __webpack_require__(5622);
 var esyPrefix = core.getInput("esy-prefix");
 var cacheKey = core.getInput("cache-key");
+var manifestKey = core.getInput("manifest");
 function run(name, command, args) {
     return __awaiter(this, void 0, void 0, function () {
         var PATH;
@@ -48462,6 +48470,9 @@ function run(name, command, args) {
             }
         });
     });
+}
+function runEsyCommand(name, args) {
+    return run(name, "esy", manifestKey ? __spreadArrays(["@" + manifestKey], args) : args);
 }
 function main() {
     return __awaiter(this, void 0, void 0, function () {
@@ -48484,7 +48495,7 @@ function main() {
                         console.log("Restored the install cache");
                     }
                     core.endGroup();
-                    return [4 /*yield*/, run("Run esy install", "esy", ["install"])];
+                    return [4 /*yield*/, runEsyCommand("Run esy install", ["install"])];
                 case 2:
                     _a.sent();
                     if (!(installCacheKey != installKey)) return [3 /*break*/, 4];
@@ -48511,11 +48522,11 @@ function main() {
                     }
                     core.endGroup();
                     if (!!buildCacheKey) return [3 /*break*/, 7];
-                    return [4 /*yield*/, run("Run esy build-dependencies", "esy", ["build-dependencies"])];
+                    return [4 /*yield*/, runEsyCommand("Run esy build-dependencies", ["build-dependencies"])];
                 case 6:
                     _a.sent();
                     _a.label = 7;
-                case 7: return [4 /*yield*/, run("Run esy build", "esy", ["build"])];
+                case 7: return [4 /*yield*/, runEsyCommand("Run esy build", ["build"])];
                 case 8:
                     _a.sent();
                     if (!(buildCacheKey != buildKey)) return [3 /*break*/, 10];
@@ -48524,7 +48535,7 @@ function main() {
                     _a.sent();
                     _a.label = 10;
                 case 10:
-                    if (!!buildCacheKey) return [3 /*break*/, 12];
+                    if (!(!manifestKey && !buildCacheKey)) return [3 /*break*/, 12];
                     return [4 /*yield*/, run("Run esy cleanup", "esy", ["cleanup", "."])];
                 case 11:
                     _a.sent();
