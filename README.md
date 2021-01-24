@@ -13,7 +13,7 @@ This action runs cached `esy install` and `esy build` in the current directory
 ## Example usage
 
 ```yml
-- uses: actions/setup-node@v1
+- uses: actions/setup-node@v2
   with:
     node-version: 14
 - name: Install esy
