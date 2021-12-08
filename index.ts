@@ -4,6 +4,7 @@ import { exec } from "@actions/exec";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import * as util from "util";
 
 const esyPrefix = core.getInput("esy-prefix");
 const cacheKey = core.getInput("cache-key");
@@ -82,8 +83,12 @@ async function main() {
     if (!manifestKey && !buildCacheKey) {
       await run("Run esy cleanup", "esy", ["cleanup", "."]);
     }
-  } catch (e) {
-    core.setFailed(e.message);
+  } catch (error) {
+    if (error instanceof Error) {
+      core.setFailed(error.message);
+    } else {
+      core.setFailed(util.inspect(error));
+    }
   }
 }
 
