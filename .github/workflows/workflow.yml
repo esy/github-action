@@ -54,7 +54,7 @@ jobs:
             {
               "name": "test",
               "dependencies": {
-                "ocaml": "4.10.0"
+                "ocaml": "5.x"
               }
             }
           ' > esy.json
