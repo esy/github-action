@@ -28,8 +28,9 @@ async function main() {
     process.chdir(workingDirectory);
 
     const platform = os.platform();
+    const arch = os.arch();
     const installPath = ["~/.esy/source"];
-    const installKey = `source-${platform}-${cacheKey}`;
+    const installKey = `source-${platform}-${arch}-${cacheKey}`;
     core.startGroup("Restoring install cache");
     const installCacheKey = await cache.restoreCache(
       installPath,
@@ -55,8 +56,8 @@ async function main() {
       .pop();
 
     const depsPath = [path.join(ESY_FOLDER, esy3!, "i")];
-    const buildKey = `build-${platform}-${cacheKey}`;
-    const restoreKeys = [`build-${platform}-`, `build-`];
+    const buildKey = `build-${platform}-${arch}-${cacheKey}`;
+    const restoreKeys = [`build-${platform}-${arch}-`, `build-`];
 
     core.startGroup("Restoring build cache");
     const buildCacheKey = await cache.restoreCache(

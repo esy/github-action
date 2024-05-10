@@ -14,7 +14,7 @@ inputs:
     description: JSON or opam file to be used
     required: false
 runs:
-  using: node16
+  using: node20
   main: dist/index.js
 branding:
   icon: package

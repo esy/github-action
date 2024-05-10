@@ -14,8 +14,6 @@ This action runs cached `esy install` and `esy build` in the current directory
 
 ```yml
 - uses: actions/setup-node@v2
-  with:
-    node-version: 16
 - name: Install esy
   run: npm install -g esy
 - uses: esy/github-action@v1
