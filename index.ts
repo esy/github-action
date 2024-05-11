@@ -8,6 +8,7 @@ import * as util from "util";
 
 const esyPrefix = core.getInput("esy-prefix");
 const cacheKey = core.getInput("cache-key");
+const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
 
 async function run(name: string, command: string, args: string[]) {
@@ -30,7 +31,7 @@ async function main() {
     const platform = os.platform();
     const arch = os.arch();
     const installPath = ["~/.esy/source"];
-    const installKey = `source-${platform}-${arch}-${cacheKey}`;
+    const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
     core.startGroup("Restoring install cache");
     const installCacheKey = await cache.restoreCache(
       installPath,

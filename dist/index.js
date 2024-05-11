@@ -87091,6 +87091,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 const esyPrefix = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput("esy-prefix");
 const cacheKey = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput("cache-key");
+const sourceCacheKey = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput("source-cache-key");
 const manifestKey = _actions_core__WEBPACK_IMPORTED_MODULE_1__.getInput("manifest");
 function run(name, command, args) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -87112,7 +87113,7 @@ function main() {
             const platform = os__WEBPACK_IMPORTED_MODULE_4__.platform();
             const arch = os__WEBPACK_IMPORTED_MODULE_4__.arch();
             const installPath = ["~/.esy/source"];
-            const installKey = `source-${platform}-${arch}-${cacheKey}`;
+            const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
             _actions_core__WEBPACK_IMPORTED_MODULE_1__.startGroup("Restoring install cache");
             const installCacheKey = yield _actions_cache__WEBPACK_IMPORTED_MODULE_0__.restoreCache(installPath, installKey, []);
             if (installCacheKey) {
