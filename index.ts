@@ -1,3 +1,4 @@
+import { DefaultArtifactClient } from "@actions/artifact";
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 import { exec } from "@actions/exec";
@@ -7,6 +8,7 @@ import * as path from "path";
 import * as util from "util";
 
 const esyPrefix = core.getInput("esy-prefix");
+const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
 const cacheKey = core.getInput("cache-key");
 const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
@@ -49,7 +51,6 @@ async function main() {
       await cache.saveCache(installPath, installKey);
     }
 
-    const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
     const esy3 = fs
       .readdirSync(ESY_FOLDER)
       .filter((name: string) => name.length > 0 && name[0] === "3")
@@ -91,6 +92,28 @@ async function main() {
     } else {
       core.setFailed(util.inspect(error));
     }
+    const artifact = new DefaultArtifactClient();
+    const { id, size } = await artifact.uploadArtifact(
+      "dot-esy",
+      fs
+        .readdirSync(ESY_FOLDER, { recursive: true, withFileTypes: true })
+        .filter((dirent) => dirent.isFile())
+        .map((dirent) => path.join(dirent.path, dirent.name)),
+      ESY_FOLDER,
+      {
+        // The level of compression for Zlib to be applied to the artifact archive.
+        // - 0: No compression
+        // - 1: Best speed
+        // - 6: Default compression (same as GNU Gzip)
+        // - 9: Best compression
+        compressionLevel: 0,
+        // optional: how long to retain the artifact
+        // if unspecified, defaults to repository/org retention settings (the limit of this value)
+        retentionDays: 10,
+      }
+    );
+
+    console.log(`Created artifact with id: ${id} (bytes: ${size}`);
   }
 }
 
