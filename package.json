@@ -17,9 +17,11 @@
     "@actions/core": "1.6.0",
     "@actions/exec": "1.1.0",
     "@actions/github": "5.0.0",
+    "tar": "^7.1.0",
     "typescript": "5.x"
   },
   "devDependencies": {
+    "@types/tar": "^6.1.13",
     "@vercel/ncc": "^0.33.0",
     "prettier": "2.5.1"
   }

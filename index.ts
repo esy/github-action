@@ -6,12 +6,23 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as util from "util";
+import * as tar from "tar";
 
 const esyPrefix = core.getInput("esy-prefix");
 const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
 const cacheKey = core.getInput("cache-key");
 const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
+
+async function compress(dir: string, outputFile: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    tar
+      .c({ z: false }, [dir])
+      .pipe(fs.createWriteStream(outputFile))
+      .on("close", () => resolve())
+      .on("error", reject);
+  });
+}
 
 async function run(name: string, command: string, args: string[]) {
   const PATH = process.env.PATH ? process.env.PATH : "";
@@ -93,13 +104,12 @@ async function main() {
       core.setFailed(util.inspect(error));
     }
     const artifact = new DefaultArtifactClient();
+    let tarFile = "dot-esy.tar";
+    await compress(ESY_FOLDER, tarFile);
     const { id, size } = await artifact.uploadArtifact(
       "dot-esy",
-      fs
-        .readdirSync(ESY_FOLDER, { recursive: true, withFileTypes: true })
-        .filter((dirent) => dirent.isFile())
-        .map((dirent) => path.join(dirent.path, dirent.name)),
-      ESY_FOLDER,
+      [tarFile],
+      process.env.GITHUB_WORKSPACE!,
       {
         // The level of compression for Zlib to be applied to the artifact archive.
         // - 0: No compression
