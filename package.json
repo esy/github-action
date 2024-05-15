@@ -21,6 +21,7 @@
     "typescript": "5.x"
   },
   "devDependencies": {
+    "@types/tar": "^6.1.13",
     "@vercel/ncc": "^0.33.0",
     "prettier": "2.5.1"
   }
