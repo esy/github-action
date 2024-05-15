@@ -16,6 +16,14 @@ inputs:
   manifest:
     description: JSON or opam file to be used
     required: false
+  prepare-npm-artifacts-mode:
+    description:
+      Runs a steps that prepare artifacts for release the app to NPM. These
+      artifacts are later used by, `bundle-npm-tarball-mode`
+    required: false
+  bundle-npm-artifacts-mode:
+    description: Runs a steps that bundle artifacts for release the app to NPM.
+    required: false
 runs:
   using: node20
   main: dist/index.js
