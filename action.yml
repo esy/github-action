@@ -24,6 +24,9 @@ inputs:
   bundle-npm-artifacts-mode:
     description: Runs a steps that bundle artifacts for release the app to NPM.
     required: false
+  postinstall-js:
+    description: Path to a postinstall.js file that would be run by NPM
+    required: false
 runs:
   using: node20
   main: dist/index.js

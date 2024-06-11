@@ -16,6 +16,7 @@ const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
 const prepareNPMArtifactsMode = core.getInput("prepare-npm-artifacts-mode");
 const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
+const customPostInstallJS = core.getInput("postinstall-js");
 
 async function run(name: string, command: string, args: string[]) {
   const PATH = process.env.PATH ? process.env.PATH : "";
@@ -287,9 +288,11 @@ async function bundleNPMArtifacts() {
     console.warn("No LICENSE found");
   }
 
-  console.log("Copying postinstall.js");
+  const releasePostInstallJS =
+    customPostInstallJS ?? path.join(__dirname, "release-postinstall.js");
+  console.log("Copying postinstall.js from", releasePostInstallJS);
   fs.copyFileSync(
-    path.join(__dirname, "release-postinstall.js"),
+    releasePostInstallJS,
     path.join(releaseFolder, "postinstall.js")
   );
 
