@@ -17,11 +17,14 @@
     "@actions/core": "1.6.0",
     "@actions/exec": "1.1.0",
     "@actions/github": "^6.0.0",
+    "@actions/tool-cache": "^2.0.1",
     "tar": "^7.1.0",
-    "typescript": "5.x"
+    "typescript": "5.x",
+    "validate-npm-package-name": "^5.0.1"
   },
   "devDependencies": {
     "@types/tar": "^6.1.13",
+    "@types/validate-npm-package-name": "^4.0.2",
     "@vercel/ncc": "^0.33.0",
     "prettier": "2.5.1"
   }

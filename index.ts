@@ -3,24 +3,58 @@ import type { Artifact } from "@actions/artifact";
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 import { exec } from "@actions/exec";
+import * as toolCache from "@actions/tool-cache";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import * as crypto from "crypto";
 import * as util from "util";
 import * as cp from "child_process";
 import * as tar from "tar";
+import validateNPMPackageName from "validate-npm-package-name";
+
+function appendEnvironmentFile(key: string, value: string) {
+  fs.appendFileSync(process.env.GITHUB_OUTPUT!, `${key}=${value}\n`);
+  fs.appendFileSync(process.env.GITHUB_ENV!, `${key}=${value}\n`);
+}
 
 let esyPrefix = core.getInput("esy-prefix");
+esyPrefix =
+  esyPrefix && esyPrefix !== ""
+    ? esyPrefix
+    : path.join(
+        path.dirname(
+          process.env.GITHUB_WORKSPACE ||
+            process.env.HOME ||
+            process.env.HOMEPATH ||
+            "~"
+        ),
+        ".esy"
+      );
+console.log("esy-prefix", esyPrefix);
+const ghOutputEsyPrefixK = "ESY_PREFIX";
+console.log(`Setting ${ghOutputEsyPrefixK} to`, esyPrefix);
+appendEnvironmentFile(ghOutputEsyPrefixK, esyPrefix);
+
 const cacheKey = core.getInput("cache-key");
 const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
 const prepareNPMArtifactsMode = core.getInput("prepare-npm-artifacts-mode");
 const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
 const customPostInstallJS = core.getInput("postinstall-js");
-
-function appendEnvironmentFile(key: string, value: string) {
-  fs.appendFileSync(process.env.GITHUB_OUTPUT!, `${key}=${value}\n`);
-  fs.appendFileSync(process.env.GITHUB_ENV!, `${key}=${value}\n`);
+const setupEsy = core.getInput("setup-esy") || true; // Default behaviour is to install esy for user and cache it
+const setupEsyTarball = core.getInput("setup-esy-tarball");
+const setupEsyShaSum = core.getInput("setup-esy-shasum");
+const setupEsyVersion = core.getInput("setup-esy-version");
+const setupEsyNPMPackageName = core.getInput("setup-esy-npm-package");
+const partsSeparatedBtAT = setupEsyNPMPackageName.split("@");
+if (partsSeparatedBtAT.length > 1 && partsSeparatedBtAT[0] !== "") {
+  // ie @ appears in such a way that it separates name and version. Not to signify namespace
+  // esy@latest enters this block. @prometheansacrifice/esy doesn't
+  console.error(
+    "Please specify the version (or NPM dist-tag) in the setup-esy-version field"
+  );
+  process.exit(-1);
 }
 
 async function run(name: string, command: string, args: string[]) {
@@ -30,36 +64,142 @@ async function run(name: string, command: string, args: string[]) {
   core.endGroup();
 }
 
+type NpmInfo = {
+  name: string;
+  dist: { tarball: string; shasum: string };
+  version: string;
+};
+let cachedEsyNPMInfo: NpmInfo | undefined;
+function getLatestEsyNPMInfo(
+  alternativeEsyNPMPackage: string | undefined
+): NpmInfo {
+  let esyPackage;
+  if (!alternativeEsyNPMPackage || alternativeEsyNPMPackage === "") {
+    // No alternative was provided. So, fallback to default
+    esyPackage = "esy@latest";
+  } else {
+    const {
+      validForOldPackages,
+      validForNewPackages,
+      errors = [],
+    } = validateNPMPackageName(alternativeEsyNPMPackage);
+    if (!validForNewPackages || !validForOldPackages) {
+      throw new Error(`Invalid alternative NPM package name provided: ${alternativeEsyNPMPackage}
+Errors:
+${errors.join("\n")}`);
+    }
+    esyPackage = `${alternativeEsyNPMPackage}@${setupEsyVersion}`;
+  }
+  try {
+    if (!cachedEsyNPMInfo) {
+      cachedEsyNPMInfo = JSON.parse(
+        cp.execSync(`npm info "${esyPackage}" --json`).toString().trim()
+      );
+      return cachedEsyNPMInfo!;
+    } else {
+      return cachedEsyNPMInfo;
+    }
+  } catch (e: any) {
+    throw new Error("Could not download the setup esy. Reason: " + e.message);
+  }
+}
+
+function getEsyDownloadArtifactsMeta(
+  alternativeEsyNPMPackage: string | undefined
+) {
+  const esyNPMInfo = getLatestEsyNPMInfo(alternativeEsyNPMPackage);
+  const tarballUrl = esyNPMInfo.dist.tarball;
+  const shasum = esyNPMInfo.dist.shasum;
+  const version = esyNPMInfo.version;
+  const name = esyNPMInfo.name;
+  return { name, tarballUrl, shasum, version };
+}
+
 function runEsyCommand(name: string, args: string[]) {
-  args.push(`--prefix=${esyPrefix}`);
+  args.push(`--prefix-path=${esyPrefix}`);
   return run(name, "esy", manifestKey ? [`@${manifestKey}`, ...args] : args);
+}
+
+function computeChecksum(filePath: string, algo: string) {
+  return new Promise((resolve) => {
+    let stream = fs.createReadStream(filePath).pipe(crypto.createHash(algo));
+    let buf = "";
+    stream.on("data", (chunk: Buffer) => {
+      buf += chunk.toString("hex");
+    });
+    stream.on("end", () => {
+      resolve(buf);
+    });
+  });
 }
 
 const platform = os.platform();
 const arch = os.arch();
 async function main() {
+  const workingDirectory = core.getInput("working-directory") || process.cwd();
   try {
-    const workingDirectory =
-      core.getInput("working-directory") || process.cwd();
+    if (setupEsy) {
+      let tarballUrl, checksum, esyPackageVersion, esyPackageName;
+      if (!setupEsyVersion || !setupEsyShaSum || !setupEsyTarball) {
+        const meta = getEsyDownloadArtifactsMeta(setupEsyNPMPackageName);
+        tarballUrl = meta.tarballUrl;
+        checksum = meta.shasum;
+        esyPackageVersion = meta.version;
+        esyPackageName = meta.name;
+      } else {
+        tarballUrl = setupEsyTarball;
+        esyPackageVersion = setupEsyVersion;
+        checksum = setupEsyShaSum;
+        esyPackageName = setupEsyNPMPackageName;
+      }
+      let cachedPath = toolCache.find(esyPackageName, esyPackageVersion, arch);
+      if (cachedPath === "") {
+        console.log("Fetching tarball from", tarballUrl);
+        const downloadedEsyNPMTarball = await toolCache.downloadTool(
+          tarballUrl
+        );
+        const checksumAlgo = "sha1";
+        const computedChecksum = await computeChecksum(
+          downloadedEsyNPMTarball,
+          checksumAlgo
+        );
+        if (computedChecksum !== checksum) {
+          throw new Error(
+            `Downloaded by checksum failed. url: ${setupEsyTarball} downloadPath: ${downloadedEsyNPMTarball} checksum expected: ${checksum} checksum computed: ${computedChecksum} checksum algorithm: ${checksumAlgo}`
+          );
+        } else {
+          console.log(
+            "Checksum validation succeeded. Downloaded tarball's checksum is:",
+            checksum
+          );
+        }
+
+        const extractedEsyNPM = await toolCache.extractTar(
+          downloadedEsyNPMTarball
+        );
+        core.startGroup("Running postinstall");
+        const esyPackagePath = path.join(extractedEsyNPM, "package");
+        const postInstall = JSON.parse(
+          fs
+            .readFileSync(path.join(esyPackagePath, "package.json"))
+            .toString()
+            .trim()
+        ).scripts.postinstall;
+        process.chdir(esyPackagePath);
+        await exec(postInstall);
+        core.endGroup();
+        process.chdir(workingDirectory);
+        cachedPath = await toolCache.cacheDir(
+          esyPackagePath,
+          esyPackageName,
+          esyPackageVersion,
+          arch
+        );
+      }
+      core.addPath(path.join(cachedPath, "bin"));
+    }
     fs.statSync(workingDirectory);
     process.chdir(workingDirectory);
-
-    esyPrefix =
-      esyPrefix && esyPrefix !== ""
-        ? esyPrefix
-        : path.join(
-            path.dirname(
-              process.env.GITHUB_WORKSPACE ||
-                process.env.HOME ||
-                process.env.HOMEPATH ||
-                "~"
-            ),
-            ".esy"
-          );
-    console.log("esy-prefix", esyPrefix);
-    const ghOutputEsyPrefixK = "ESY_PREFIX";
-    console.log(`Setting ${ghOutputEsyPrefixK} to`, esyPrefix);
-    appendEnvironmentFile(ghOutputEsyPrefixK, esyPrefix);
     const installPath = [`${esyPrefix}/source`];
     const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
     core.startGroup("Restoring install cache");
@@ -313,7 +453,9 @@ async function bundleNPMArtifacts() {
   }
 
   const releasePostInstallJS =
-    customPostInstallJS ?? path.join(__dirname, "release-postinstall.js");
+    typeof customPostInstallJS !== "string" && customPostInstallJS !== ""
+      ? customPostInstallJS
+      : path.join(__dirname, "release-postinstall.js");
   console.log("Copying postinstall.js from", releasePostInstallJS);
   fs.copyFileSync(
     releasePostInstallJS,
