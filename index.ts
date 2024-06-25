@@ -10,7 +10,7 @@ import * as util from "util";
 import * as cp from "child_process";
 import * as tar from "tar";
 
-const esyPrefix = core.getInput("esy-prefix");
+let esyPrefix = core.getInput("esy-prefix");
 const cacheKey = core.getInput("cache-key");
 const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
@@ -26,6 +26,7 @@ async function run(name: string, command: string, args: string[]) {
 }
 
 function runEsyCommand(name: string, args: string[]) {
+  args.push(`--prefix=${esyPrefix}`);
   return run(name, "esy", manifestKey ? [`@${manifestKey}`, ...args] : args);
 }
 
@@ -38,13 +39,25 @@ async function main() {
     fs.statSync(workingDirectory);
     process.chdir(workingDirectory);
 
-    const installPath = ["~/.esy/source"];
+    esyPrefix =
+      esyPrefix && esyPrefix !== ""
+        ? esyPrefix
+        : path.join(
+            path.dirname(
+              process.env.GITHUB_WORKSPACE ||
+                process.env.HOME ||
+                process.env.HOMEPATH ||
+                "~",
+            ),
+            ".esy",
+          );
+    const installPath = [`${esyPrefix}/source`];
     const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
     core.startGroup("Restoring install cache");
     const installCacheKey = await cache.restoreCache(
       installPath,
       installKey,
-      []
+      [],
     );
     if (installCacheKey) {
       console.log("Restored the install cache");
@@ -57,14 +70,13 @@ async function main() {
       await cache.saveCache(installPath, installKey);
     }
 
-    const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
     const esy3 = fs
-      .readdirSync(ESY_FOLDER)
+      .readdirSync(esyPrefix)
       .filter((name: string) => name.length > 0 && name[0] === "3")
       .sort()
       .pop();
 
-    const depsPath = [path.join(ESY_FOLDER, esy3!, "i")];
+    const depsPath = [path.join(esyPrefix, esy3!, "i")];
     const buildKey = `build-${platform}-${arch}-${cacheKey}`;
     const restoreKeys = [`build-${platform}-${arch}-`, `build-`];
 
@@ -72,7 +84,7 @@ async function main() {
     const buildCacheKey = await cache.restoreCache(
       depsPath,
       buildKey,
-      restoreKeys
+      restoreKeys,
     );
     if (buildCacheKey) {
       console.log("Restored the build cache");
@@ -90,9 +102,12 @@ async function main() {
     }
 
     // TODO: support cleanup + manifest
-    if (!manifestKey && !buildCacheKey) {
-      await run("Run esy cleanup", "esy", ["cleanup", "."]);
-    }
+    // Need to improve how subcommands are called
+    // --prefix after cleanup subcommand doesn't work
+    // --prefix prepended doesn't work with any other sub-command
+    // if (!manifestKey && !buildCacheKey) {
+    //   await runEsyCommand("Run esy cleanup", ["cleanup", "."]);
+    // }
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
@@ -105,7 +120,7 @@ async function main() {
 async function uncompress(
   dest: string,
   tarFile: string,
-  strip?: number
+  strip?: number,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.createReadStream(tarFile)
@@ -113,7 +128,7 @@ async function uncompress(
         tar.x({
           strip: strip,
           C: dest, // alias for cwd:'some-dir', also ok
-        })
+        }),
       )
       .on("close", () => resolve())
       .on("error", reject);
@@ -132,7 +147,7 @@ async function prepareNPMArtifacts() {
   const statusCmd = manifestKey ? `esy ${manifestKey} status` : "esy status";
   try {
     const manifestFilePath = JSON.parse(
-      cp.execSync(statusCmd).toString()
+      cp.execSync(statusCmd).toString(),
     ).rootPackageConfigPath;
     const manifest = JSON.parse(fs.readFileSync(manifestFilePath).toString());
     if (manifest.esy.release) {
@@ -157,7 +172,7 @@ async function prepareNPMArtifacts() {
         // optional: how long to retain the artifact
         // if unspecified, defaults to repository/org retention settings (the limit of this value)
         retentionDays: 10,
-      }
+      },
     );
 
     console.log(`Created artifact with id: ${id} (bytes: ${size}`);
@@ -188,19 +203,19 @@ async function bundleNPMArtifacts() {
       });
       await uncompress(folderPath, path.join(folderPath, "npm-tarball.tgz"), 1);
       return folderName;
-    })
+    }),
   );
   const artifactFolders = artifactFoldersList.reduce(
     (acc: string[], folderName: string) => {
       acc.push(folderName);
       return acc;
     },
-    []
+    [],
   );
   const esyInstallReleaseJS = "esyInstallRelease.js";
   fs.cpSync(
     path.join(releaseFolder, artifactFoldersList[0], esyInstallReleaseJS),
-    path.join(releaseFolder, esyInstallReleaseJS)
+    path.join(releaseFolder, esyInstallReleaseJS),
   );
   console.log("Creating package.json");
   const possibleEsyJsonPath = path.join(workingDirectory, "esy.json");
@@ -214,21 +229,21 @@ async function bundleNPMArtifacts() {
     process.exit(1);
   }
   const mainPackageJson = JSON.parse(
-    fs.readFileSync(`${mainPackageJsonPath}`).toString()
+    fs.readFileSync(`${mainPackageJsonPath}`).toString(),
   );
   const bins = Array.isArray(mainPackageJson.esy.release.bin)
     ? mainPackageJson.esy.release.bin.reduce(
         (acc: any, curr: string) =>
           Object.assign({ [curr]: "bin/" + curr }, acc),
-        {}
+        {},
       )
     : Object.keys(mainPackageJson.esy.release.bin).reduce(
         (acc, currKey) =>
           Object.assign(
             { [currKey]: "bin/" + mainPackageJson.esy.release.bin[currKey] },
-            acc
+            acc,
           ),
-        {}
+        {},
       );
   const rewritePrefix =
     mainPackageJson.esy &&
@@ -261,7 +276,7 @@ async function bundleNPMArtifacts() {
       ].concat(artifactFolders),
     },
     null,
-    2
+    2,
   );
 
   fs.writeFileSync(path.join(releaseFolder, "package.json"), packageJson, {
@@ -272,7 +287,7 @@ async function bundleNPMArtifacts() {
     console.log("Copying LICENSE");
     fs.copyFileSync(
       path.join(workingDirectory, "LICENSE"),
-      path.join(releaseFolder, "LICENSE")
+      path.join(releaseFolder, "LICENSE"),
     );
   } catch (e) {
     console.warn("No LICENSE found");
@@ -282,7 +297,7 @@ async function bundleNPMArtifacts() {
     console.log("Copying README.md");
     fs.copyFileSync(
       path.join(workingDirectory, "README.md"),
-      path.join(releaseFolder, "README.md")
+      path.join(releaseFolder, "README.md"),
     );
   } catch {
     console.warn("No LICENSE found");
@@ -293,7 +308,7 @@ async function bundleNPMArtifacts() {
   console.log("Copying postinstall.js from", releasePostInstallJS);
   fs.copyFileSync(
     releasePostInstallJS,
-    path.join(releaseFolder, "postinstall.js")
+    path.join(releaseFolder, "postinstall.js"),
   );
 
   console.log("Creating placeholder files");
@@ -330,7 +345,7 @@ ECHO You need to have postinstall enabled`;
       // optional: how long to retain the artifact
       // if unspecified, defaults to repository/org retention settings (the limit of this value)
       retentionDays: 10,
-    }
+    },
   );
 
   core.endGroup();
