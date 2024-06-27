@@ -18,6 +18,11 @@ const prepareNPMArtifactsMode = core.getInput("prepare-npm-artifacts-mode");
 const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
 const customPostInstallJS = core.getInput("postinstall-js");
 
+function appendEnvironmentFile(key: string, value: string) {
+  let filename = process.env.GITHUB_OUTPUT!;
+  fs.appendFileSync(filename, `${key}=${value}\n`);
+}
+
 async function run(name: string, command: string, args: string[]) {
   const PATH = process.env.PATH ? process.env.PATH : "";
   core.startGroup(name);
@@ -51,6 +56,10 @@ async function main() {
             ),
             ".esy"
           );
+    console.log("esy-prefix", esyPrefix);
+    const ghOutputEsyPrefixK = "ESY_PREFIX";
+    console.log(`Setting ${ghOutputEsyPrefixK} to`, esyPrefix);
+    appendEnvironmentFile(ghOutputEsyPrefixK, esyPrefix);
     const installPath = [`${esyPrefix}/source`];
     const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
     core.startGroup("Restoring install cache");
