@@ -19,8 +19,8 @@ const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
 const customPostInstallJS = core.getInput("postinstall-js");
 
 function appendEnvironmentFile(key: string, value: string) {
-  let filename = process.env.GITHUB_OUTPUT!;
-  fs.appendFileSync(filename, `${key}=${value}\n`);
+  fs.appendFileSync(process.env.GITHUB_OUTPUT!, `${key}=${value}\n`);
+  fs.appendFileSync(process.env.GITHUB_ENV!, `${key}=${value}\n`);
 }
 
 async function run(name: string, command: string, args: string[]) {
