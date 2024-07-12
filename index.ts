@@ -10,13 +10,18 @@ import * as util from "util";
 import * as cp from "child_process";
 import * as tar from "tar";
 
-const esyPrefix = core.getInput("esy-prefix");
+let esyPrefix = core.getInput("esy-prefix");
 const cacheKey = core.getInput("cache-key");
 const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
 const prepareNPMArtifactsMode = core.getInput("prepare-npm-artifacts-mode");
 const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
 const customPostInstallJS = core.getInput("postinstall-js");
+
+function appendEnvironmentFile(key: string, value: string) {
+  fs.appendFileSync(process.env.GITHUB_OUTPUT!, `${key}=${value}\n`);
+  fs.appendFileSync(process.env.GITHUB_ENV!, `${key}=${value}\n`);
+}
 
 async function run(name: string, command: string, args: string[]) {
   const PATH = process.env.PATH ? process.env.PATH : "";
@@ -26,6 +31,7 @@ async function run(name: string, command: string, args: string[]) {
 }
 
 function runEsyCommand(name: string, args: string[]) {
+  args.push(`--prefix=${esyPrefix}`);
   return run(name, "esy", manifestKey ? [`@${manifestKey}`, ...args] : args);
 }
 
@@ -38,7 +44,23 @@ async function main() {
     fs.statSync(workingDirectory);
     process.chdir(workingDirectory);
 
-    const installPath = ["~/.esy/source"];
+    esyPrefix =
+      esyPrefix && esyPrefix !== ""
+        ? esyPrefix
+        : path.join(
+            path.dirname(
+              process.env.GITHUB_WORKSPACE ||
+                process.env.HOME ||
+                process.env.HOMEPATH ||
+                "~"
+            ),
+            ".esy"
+          );
+    console.log("esy-prefix", esyPrefix);
+    const ghOutputEsyPrefixK = "ESY_PREFIX";
+    console.log(`Setting ${ghOutputEsyPrefixK} to`, esyPrefix);
+    appendEnvironmentFile(ghOutputEsyPrefixK, esyPrefix);
+    const installPath = [`${esyPrefix}/source`];
     const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
     core.startGroup("Restoring install cache");
     const installCacheKey = await cache.restoreCache(
@@ -57,14 +79,13 @@ async function main() {
       await cache.saveCache(installPath, installKey);
     }
 
-    const ESY_FOLDER = esyPrefix ? esyPrefix : path.join(os.homedir(), ".esy");
     const esy3 = fs
-      .readdirSync(ESY_FOLDER)
+      .readdirSync(esyPrefix)
       .filter((name: string) => name.length > 0 && name[0] === "3")
       .sort()
       .pop();
 
-    const depsPath = [path.join(ESY_FOLDER, esy3!, "i")];
+    const depsPath = [path.join(esyPrefix, esy3!, "i")];
     const buildKey = `build-${platform}-${arch}-${cacheKey}`;
     const restoreKeys = [`build-${platform}-${arch}-`, `build-`];
 
@@ -90,9 +111,12 @@ async function main() {
     }
 
     // TODO: support cleanup + manifest
-    if (!manifestKey && !buildCacheKey) {
-      await run("Run esy cleanup", "esy", ["cleanup", "."]);
-    }
+    // Need to improve how subcommands are called
+    // --prefix after cleanup subcommand doesn't work
+    // --prefix prepended doesn't work with any other sub-command
+    // if (!manifestKey && !buildCacheKey) {
+    //   await runEsyCommand("Run esy cleanup", ["cleanup", "."]);
+    // }
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
