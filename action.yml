@@ -27,6 +27,29 @@ inputs:
   postinstall-js:
     description: Path to a postinstall.js file that would be run by NPM
     required: false
+  setup-esy:
+    description: Flag to control if esy itself should be installed by the action
+    required: false
+  setup-esy-tarball:
+    description:
+      URL to esy tarball. Must be provided together with shasum and version.
+      Else, the action will default to latest from NPM
+    required: false
+  setup-esy-shasum:
+    description:
+      shasum of the tarball. Must be provided together with shasum and version.
+      Else, the action will default to latest from NPM
+    required: false
+  setup-esy-version:
+    description:
+      version of the esy tool. Must be provided together with shasum and
+      version. Else, the action will default to latest from NPM
+    required: false
+  setup-esy-npm-package:
+    description:
+      Alternative NPM package that contains esy. Can contain version/tag too. Eg
+      esy@beta.
+    required: false
 runs:
   using: node20
   main: dist/index.js

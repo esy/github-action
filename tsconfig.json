@@ -4,6 +4,7 @@
     "lib": ["ESNext"],
     "moduleResolution": "Node",
     "noEmit": true,
+    "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
