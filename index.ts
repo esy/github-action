@@ -453,7 +453,7 @@ async function bundleNPMArtifacts() {
   }
 
   const releasePostInstallJS =
-    typeof customPostInstallJS !== "string" && customPostInstallJS !== ""
+    typeof customPostInstallJS === "string" && customPostInstallJS !== ""
       ? customPostInstallJS
       : path.join(__dirname, "release-postinstall.js");
   console.log("Copying postinstall.js from", releasePostInstallJS);
