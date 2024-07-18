@@ -102,11 +102,8 @@ function copyFileSync(sourcePath, destPath) {
   fs.chmodSync(destPath, 0755);
 }
 
-var copyPlatformBinaries = (platformPath) => {
-  var platformBuildPath = path.join(
-    __dirname,
-    "platform-esy-npm-release-" + platformPath
-  );
+var copyPlatformBinaries = (platformPath, foldersToCopy) => {
+  var platformBuildPath = path.join(__dirname, platformPath);
 
   let foldersToCopy, binariesToCopy;
 
@@ -114,13 +111,7 @@ var copyPlatformBinaries = (platformPath) => {
     return packageJson.bin[name];
   });
 
-  if (platformPath === "linux") {
-    fs.mkdirSync(path.join(__dirname, "lib"));
-    foldersToCopy = ["bin", "lib"];
-  } else {
-    foldersToCopy = ["bin", "_export"];
-    binariesToCopy = binariesToCopy.concat(["esyInstallRelease.js"]);
-  }
+  binariesToCopy = binariesToCopy.concat(["esyInstallRelease.js"]);
 
   foldersToCopy.forEach((folderPath) => {
     var sourcePath = path.join(platformBuildPath, folderPath);
@@ -166,18 +157,26 @@ switch (platform) {
       console.warn("error: x86 is currently not supported on Windows");
       process.exit(1);
     }
-
-    copyPlatformBinaries("windows-x64");
+    copyPlatformBinaries("platform-esy-npm-release-windows-x64", [
+      "bin",
+      "_export",
+    ]);
     require("./esyInstallRelease");
     break;
   case "linux":
-    copyPlatformBinaries(`${platform}-${platformArch}`);
+    copyPlatformBinaries(`platform-esy-npm-release-linux-${platformArch}`, [
+      "bin",
+      "_export",
+    ]);
     // Statically linked binaries dont need postinstall scripts
     // TODO add support for statically linked binaries
     require("./esyInstallRelease");
     break;
   case "darwin":
-    copyPlatformBinaries(`${platform}-${platformArch}`);
+    copyPlatformBinaries(`platform-esy-npm-release-darwin-${platformArch}`, [
+      "bin",
+      "_export",
+    ]);
     require("./esyInstallRelease");
     break;
   default:
