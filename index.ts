@@ -22,15 +22,7 @@ let esyPrefix = core.getInput("esy-prefix");
 esyPrefix =
   esyPrefix && esyPrefix !== ""
     ? esyPrefix
-    : path.join(
-        path.dirname(
-          process.env.GITHUB_WORKSPACE ||
-            process.env.HOME ||
-            process.env.HOMEPATH ||
-            "~"
-        ),
-        ".esy"
-      );
+    : path.join(path.resolve(".."), ".esy");
 console.log("esy-prefix", esyPrefix);
 const ghOutputEsyPrefixK = "ESY_PREFIX";
 console.log(`Setting ${ghOutputEsyPrefixK} to`, esyPrefix);
