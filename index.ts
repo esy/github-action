@@ -219,14 +219,9 @@ async function main() {
 
     const depsPath = [path.join(esyPrefix, esy3!, "i")];
     const buildKey = `build-${platform}-${arch}-${cacheKey}`;
-    const restoreKeys = [`build-${platform}-${arch}-`, `build-`];
 
     core.startGroup("Restoring build cache");
-    const buildCacheKey = await cache.restoreCache(
-      depsPath,
-      buildKey,
-      restoreKeys
-    );
+    const buildCacheKey = await cache.restoreCache(depsPath, buildKey, []);
     if (buildCacheKey) {
       console.log("Restored the build cache");
     }
