@@ -25,7 +25,9 @@ inputs:
     description: Runs a steps that bundle artifacts for release the app to NPM.
     required: false
   postinstall-js:
-    description: Path to a postinstall.js file that would be run by NPM
+    description:
+      Path to a custom `postinstall.js` file that could be placed in the final
+      bundled NPM tarball.
     required: false
   setup-esy:
     description: Flag to control if esy itself should be installed by the action
