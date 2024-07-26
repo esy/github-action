@@ -291,7 +291,7 @@ async function prepareNPMArtifacts() {
       cp.execSync(statusCmd).toString()
     ).rootPackageConfigPath;
     const manifest = JSON.parse(fs.readFileSync(manifestFilePath).toString());
-    if (manifest.esy.release) {
+    if (manifest.esy?.release) {
       await runEsyCommand("Running esy npm-release", ["npm-release"]);
     }
     let tarFile = `npm-tarball.tgz`;
