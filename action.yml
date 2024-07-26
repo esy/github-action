@@ -8,7 +8,7 @@ inputs:
     description: A cache key for retrieving esy sources cache.
     required: true
   working-directory:
-    description: Working directory for esy
+    description: Working directory for esy. It's converted into an absolute path, if it already isn't
     required: false
   esy-prefix:
     description: Prefix of esy folder

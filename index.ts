@@ -128,7 +128,12 @@ function computeChecksum(filePath: string, algo: string) {
 const platform = os.platform();
 const arch = os.arch();
 async function main() {
-  const workingDirectory = core.getInput("working-directory") || process.cwd();
+  let workingDirectory = core.getInput("working-directory") || process.cwd();
+  workingDirectory = path.isAbsolute(workingDirectory)
+    ? workingDirectory
+    : path.join(process.cwd(), workingDirectory);
+  // Otherwise, when we change directories and then back (workingDirectory -> /tmp -> workingDirectory)
+  // chdir() would try to enter a path relative to that path
   try {
     if (setupEsy) {
       let tarballUrl, checksum, esyPackageVersion, esyPackageName;
