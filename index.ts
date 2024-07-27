@@ -48,6 +48,10 @@ if (partsSeparatedBtAT.length > 1 && partsSeparatedBtAT[0] !== "") {
   );
   process.exit(-1);
 }
+let workingDirectory = core.getInput("working-directory") || process.cwd();
+workingDirectory = path.isAbsolute(workingDirectory)
+  ? workingDirectory
+  : path.join(process.cwd(), workingDirectory);
 
 async function run(name: string, command: string, args: string[]) {
   const PATH = process.env.PATH ? process.env.PATH : "";
@@ -128,10 +132,6 @@ function computeChecksum(filePath: string, algo: string) {
 const platform = os.platform();
 const arch = os.arch();
 async function main() {
-  let workingDirectory = core.getInput("working-directory") || process.cwd();
-  workingDirectory = path.isAbsolute(workingDirectory)
-    ? workingDirectory
-    : path.join(process.cwd(), workingDirectory);
   // Otherwise, when we change directories and then back (workingDirectory -> /tmp -> workingDirectory)
   // chdir() would try to enter a path relative to that path
   try {
@@ -295,7 +295,7 @@ async function prepareNPMArtifacts() {
       await runEsyCommand("Running esy npm-release", ["npm-release"]);
     }
     let tarFile = `npm-tarball.tgz`;
-    await compress("_release", tarFile);
+    await compress(path.join(workingDirectory, "_release"), tarFile);
 
     const artifactName = `esy-npm-release-${platform}-${arch}`;
     console.log("Artifact name: ", artifactName);
@@ -327,7 +327,6 @@ async function prepareNPMArtifacts() {
 }
 
 async function bundleNPMArtifacts() {
-  const workingDirectory = core.getInput("working-directory") || process.cwd();
   fs.statSync(workingDirectory);
   process.chdir(workingDirectory);
   const releaseFolder = path.join(workingDirectory, "_npm-release");
