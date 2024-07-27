@@ -288,7 +288,7 @@ async function prepareNPMArtifacts() {
   const statusCmd = manifestKey ? `esy ${manifestKey} status` : "esy status";
   try {
     const manifestFilePath = JSON.parse(
-      cp.execSync(statusCmd).toString()
+      cp.execSync(statusCmd, { cwd: workingDirectory }).toString()
     ).rootPackageConfigPath;
     const manifest = JSON.parse(fs.readFileSync(manifestFilePath).toString());
     if (manifest.esy?.release) {
