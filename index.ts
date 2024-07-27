@@ -293,30 +293,35 @@ async function prepareNPMArtifacts() {
     const manifest = JSON.parse(fs.readFileSync(manifestFilePath).toString());
     if (manifest.esy?.release) {
       await runEsyCommand("Running esy npm-release", ["npm-release"]);
+      let tarFile = `npm-tarball.tgz`;
+      await compress(path.join(workingDirectory, "_release"), tarFile);
+
+      const artifactName = `esy-npm-release-${platform}-${arch}`;
+      console.log("Artifact name: ", artifactName);
+      const { id, size } = await artifact.uploadArtifact(
+        artifactName,
+        [tarFile],
+        process.env.GITHUB_WORKSPACE!,
+        {
+          // The level of compression for Zlib to be applied to the artifact archive.
+          // - 0: No compression
+          // - 1: Best speed
+          // - 6: Default compression (same as GNU Gzip)
+          // - 9: Best compression
+          compressionLevel: 0,
+          // optional: how long to retain the artifact
+          // if unspecified, defaults to repository/org retention settings (the limit of this value)
+          retentionDays: 10,
+        }
+      );
+
+      console.log(`Created artifact with id: ${id} (bytes: ${size}`);
+    } else {
+      console.error(fs.readFileSync(manifestFilePath).toString());
+      throw new Error(
+        `No config found in ${manifestFilePath} for npm-release. See https://esy.sh/docs/npm-release to learn more.`
+      );
     }
-    let tarFile = `npm-tarball.tgz`;
-    await compress(path.join(workingDirectory, "_release"), tarFile);
-
-    const artifactName = `esy-npm-release-${platform}-${arch}`;
-    console.log("Artifact name: ", artifactName);
-    const { id, size } = await artifact.uploadArtifact(
-      artifactName,
-      [tarFile],
-      process.env.GITHUB_WORKSPACE!,
-      {
-        // The level of compression for Zlib to be applied to the artifact archive.
-        // - 0: No compression
-        // - 1: Best speed
-        // - 6: Default compression (same as GNU Gzip)
-        // - 9: Best compression
-        compressionLevel: 0,
-        // optional: how long to retain the artifact
-        // if unspecified, defaults to repository/org retention settings (the limit of this value)
-        retentionDays: 10,
-      }
-    );
-
-    console.log(`Created artifact with id: ${id} (bytes: ${size}`);
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
