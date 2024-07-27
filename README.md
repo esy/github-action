@@ -134,7 +134,7 @@ Path where esy can setup the cache. Default: `$HOME/.esy`
 #### `working-directory`
 
 Working directory of the project. Useful for projects that place esy project
-under a folder.
+under a folder. It's converted into an absolute path, if it already isn't.
 
 Default: Action workspace root.
 
