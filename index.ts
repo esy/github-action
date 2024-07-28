@@ -273,7 +273,7 @@ async function uncompress(
 async function compress(dir: string, outputFile: string): Promise<void> {
   return new Promise((resolve, reject) => {
     tar
-      .c({ z: true }, [dir])
+      .c({ z: true, C: path.dirname(dir) }, [dir])
       .pipe(fs.createWriteStream(outputFile))
       .on("close", () => resolve())
       .on("error", reject);
