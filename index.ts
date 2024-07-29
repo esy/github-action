@@ -360,11 +360,16 @@ async function bundleNPMArtifacts() {
     },
     []
   );
-  const esyInstallReleaseJS = "esyInstallRelease.js";
-  fs.cpSync(
-    path.join(releaseFolder, artifactFoldersList[0], esyInstallReleaseJS),
-    path.join(releaseFolder, esyInstallReleaseJS)
-  );
+  try {
+    const esyInstallReleaseJS = "esyInstallRelease.js";
+    fs.cpSync(
+      path.join(releaseFolder, artifactFoldersList[0], esyInstallReleaseJS),
+      path.join(releaseFolder, esyInstallReleaseJS)
+    );
+  } catch (e) {
+    console.warn("Could not copy esyInstallRelease.js", e);
+    console.log("Skipping esyInstallRelease.js as it is optional");
+  }
   console.log("Creating package.json");
   const possibleEsyJsonPath = path.join(workingDirectory, "esy.json");
   const possiblePackageJsonPath = path.join(workingDirectory, "package.json");
