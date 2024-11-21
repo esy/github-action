@@ -349,7 +349,9 @@ async function bundleNPMArtifacts() {
       await artifact.downloadArtifact(a.id, {
         path: folderPath,
       });
-      await uncompress(folderPath, path.join(folderPath, "npm-tarball.tgz"), 1);
+      const npmTarballPath = path.join(folderPath, "npm-tarball.tgz");
+      await uncompress(folderPath, npmTarballPath, 1);
+      fs.rmSync(npmTarballPath);
       return folderName;
     })
   );
