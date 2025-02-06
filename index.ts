@@ -410,6 +410,47 @@ async function bundleNPMArtifacts() {
     return cp.execSync(cmd).toString().trim();
   }
   const version = exec("git describe --tags --always");
+
+  function getCompilerVersion(sandbox?: string) {
+    let lockFileFolder;
+
+    if (!sandbox) {
+      lockFileFolder = "esy.lock";
+    } else {
+      lockFileFolder = `${sandbox}.esy.lock`;
+    }
+    console.log(`Looking up ${lockFileFolder} for compiler version`);
+    const lockFile = JSON.parse(
+      fs
+        .readFileSync(path.join(process.cwd(), lockFileFolder, "index.json"))
+        .toString()
+    );
+    const ocamlPackages = Object.keys(lockFile.node).filter((k) =>
+      k.startsWith("ocaml@")
+    );
+
+    if (ocamlPackages.length === 0) {
+      throw new Error(
+        "Couldn't figure ocaml compiler version from lock file because no ocaml-like packages were found"
+      );
+    }
+
+    const ocamlPackageID = ocamlPackages[0];
+    const ocamlPackageIDParts = ocamlPackageID.split("@");
+
+    if (ocamlPackageIDParts.length !== 3) {
+      throw new Error(
+        `Couldn't figure ocaml compiler version from lock file because PackageId wasn't in expected format: ${ocamlPackageID}`
+      );
+    }
+
+    return ocamlPackageIDParts[1];
+  }
+  const compilerVersion = getCompilerVersion();
+  console.log("Found compiler version", compilerVersion);
+  const staticCompilerVersion = getCompilerVersion("static.esy");
+  console.log("Found static compiler version", staticCompilerVersion);
+
   const packageJson = JSON.stringify(
     {
       name: mainPackageJson.name,
@@ -419,8 +460,8 @@ async function bundleNPMArtifacts() {
       repository: mainPackageJson.repository,
       scripts: {
         postinstall: rewritePrefix
-          ? "node -e \"process.env['OCAML_VERSION'] = process.platform == 'linux' ? '4.12.0-musl.static.flambda': '4.12.0'; process.env['OCAML_PKG_NAME'] = 'ocaml'; process.env['ESY_RELEASE_REWRITE_PREFIX']=true; require('./postinstall.js')\""
-          : "node -e \"process.env['OCAML_VERSION'] = process.platform == 'linux' ? '4.12.0-musl.static.flambda': '4.12.0'; process.env['OCAML_PKG_NAME'] = 'ocaml'; require('./postinstall.js')\"",
+          ? `node -e \"process.env['OCAML_VERSION'] = process.platform == 'linux' ? '${staticCompilerVersion}-musl.static.flambda': '${compilerVersion}'; process.env['OCAML_PKG_NAME'] = 'ocaml'; process.env['ESY_RELEASE_REWRITE_PREFIX']=true; require('./postinstall.js')\"`
+          : "require('./postinstall.js')\"",
       },
       bin: bins,
       files: [
