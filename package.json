@@ -18,6 +18,8 @@
     "@actions/exec": "1.x",
     "@actions/github": "^6.0.0",
     "@actions/tool-cache": "^2.0.1",
+    "@types/semver": "^7.7.0",
+    "semver": "^7.7.2",
     "tar": "^7.1.0",
     "typescript": "5.x",
     "validate-npm-package-name": "^5.0.1"

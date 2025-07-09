@@ -12,6 +12,7 @@ import * as util from "util";
 import * as cp from "child_process";
 import * as tar from "tar";
 import validateNPMPackageName from "validate-npm-package-name";
+import semver from "semver";
 
 function appendEnvironmentFile(key: string, value: string) {
   fs.appendFileSync(process.env.GITHUB_OUTPUT!, `${key}=${value}\n`);
@@ -52,6 +53,20 @@ let workingDirectory = core.getInput("working-directory") || process.cwd();
 workingDirectory = path.isAbsolute(workingDirectory)
   ? workingDirectory
   : path.join(process.cwd(), workingDirectory);
+
+function getEsyCLIVersion() {
+  const cmd = "esy --version";
+  return cp.execSync(cmd).toString().trim();
+}
+
+function getEsyStoreVersion() {
+  const esyCLIVersion = getEsyCLIVersion();
+  const parsedEsyCLIVersion = semver.parse(esyCLIVersion);
+  if (!parsedEsyCLIVersion) {
+    throw new Error(`Could not parsed esy CLI version: ${esyCLIVersion}`);
+  }
+  return semver.compare(parsedEsyCLIVersion, "0.9.0") >= 0 ? "4" : "3";
+}
 
 function getCompilerVersion(sandbox?: string) {
   // let lockFileFolder;
@@ -260,9 +275,10 @@ async function main() {
       await cache.saveCache(installPath, installKey);
     }
 
+    const storeVersion = getEsyStoreVersion();
     const esy3 = fs
       .readdirSync(esyPrefix)
-      .filter((name: string) => name.length > 0 && name[0] === "3")
+      .filter((name: string) => name.length > 0 && name[0] === storeVersion)
       .sort()
       .pop();
 
