@@ -34,6 +34,8 @@ const sourceCacheKey = core.getInput("source-cache-key");
 const manifestKey = core.getInput("manifest");
 const prepareNPMArtifactsMode = core.getInput("prepare-npm-artifacts-mode");
 const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
+const compilerVersion = core.getInput("ocaml-compiler-version");
+const staticCompilerVersion = core.getInput("ocaml-static-compiler-version");
 const customPostInstallJS = core.getInput("postinstall-js");
 const setupEsy = core.getInput("setup-esy") || true; // Default behaviour is to install esy for user and cache it
 const setupEsyTarball = core.getInput("setup-esy-tarball");
@@ -70,48 +72,7 @@ function getEsyStoreVersion() {
   if (!parsedEsyCLIVersion) {
     throw new Error(`Could not parsed esy CLI version: ${esyCLIVersion}`);
   }
-  return semver.compare(parsedEsyCLIVersion, "0.9.0") >= 0 ? "4" : "3";
-}
-
-function getCompilerVersion(sandbox?: string) {
-  // let lockFileFolder;
-
-  // if (!sandbox) {
-  //   lockFileFolder = "esy.lock";
-  // } else {
-  //   lockFileFolder = `${sandbox}.esy.lock`;
-  // }
-  // console.log(`Looking up ${lockFileFolder} for compiler version`);
-  // const lockFile = JSON.parse(
-  //   fs
-  //     .readFileSync(path.join(process.cwd(), lockFileFolder, "index.json"))
-  //     .toString()
-  // );
-  // const ocamlPackages = Object.keys(lockFile.node).filter((k) =>
-  //   k.startsWith("ocaml@")
-  // );
-
-  // if (ocamlPackages.length === 0) {
-  //   throw new Error(
-  //     "Couldn't figure ocaml compiler version from lock file because no ocaml-like packages were found"
-  //   );
-  // }
-
-  // const ocamlPackageID = ocamlPackages[0];
-  // const ocamlPackageIDParts = ocamlPackageID.split("@");
-
-  // if (ocamlPackageIDParts.length !== 3) {
-  //   throw new Error(
-  //     `Couldn't figure ocaml compiler version from lock file because PackageId wasn't in expected format: ${ocamlPackageID}`
-  //   );
-  // }
-
-  // return ocamlPackageIDParts[1];
-
-  const ocamlcVersionCmd = sandbox
-    ? `esy ${sandbox} ocamlc --version`
-    : "esy ocamlc --version";
-  return cli(ocamlcVersionCmd);
+  return semver.compare(parsedEsyCLIVersion, "0.8.0") > 0 ? "4" : "3";
 }
 
 async function run(name: string, command: string, args: string[]) {
@@ -195,132 +156,118 @@ function computeChecksum(filePath: string, algo: string) {
 
 const platform = os.platform();
 const arch = os.arch();
-async function main() {
+async function build() {
   // Otherwise, when we change directories and then back (workingDirectory -> /tmp -> workingDirectory)
   // chdir() would try to enter a path relative to that path
-  try {
-    if (setupEsy) {
-      let tarballUrl, checksum, esyPackageVersion, esyPackageName;
-      if (!setupEsyVersion || !setupEsyShaSum || !setupEsyTarball) {
-        const meta = getEsyDownloadArtifactsMeta(setupEsyNPMPackageName);
-        tarballUrl = meta.tarballUrl;
-        checksum = meta.shasum;
-        esyPackageVersion = meta.version;
-        esyPackageName = meta.name;
-      } else {
-        tarballUrl = setupEsyTarball;
-        esyPackageVersion = setupEsyVersion;
-        checksum = setupEsyShaSum;
-        esyPackageName = setupEsyNPMPackageName;
-      }
-      let cachedPath = toolCache.find(esyPackageName, esyPackageVersion, arch);
-      if (cachedPath === "") {
-        console.log("Fetching tarball from", tarballUrl);
-        const downloadedEsyNPMTarball = await toolCache.downloadTool(
-          tarballUrl
-        );
-        const checksumAlgo = "sha1";
-        const computedChecksum = await computeChecksum(
-          downloadedEsyNPMTarball,
-          checksumAlgo
-        );
-        if (computedChecksum !== checksum) {
-          throw new Error(
-            `Downloaded by checksum failed. url: ${setupEsyTarball} downloadPath: ${downloadedEsyNPMTarball} checksum expected: ${checksum} checksum computed: ${computedChecksum} checksum algorithm: ${checksumAlgo}`
-          );
-        } else {
-          console.log(
-            "Checksum validation succeeded. Downloaded tarball's checksum is:",
-            checksum
-          );
-        }
-
-        const extractedEsyNPM = await toolCache.extractTar(
-          downloadedEsyNPMTarball
-        );
-        core.startGroup("Running postinstall");
-        const esyPackagePath = path.join(extractedEsyNPM, "package");
-        const postInstall = JSON.parse(
-          fs
-            .readFileSync(path.join(esyPackagePath, "package.json"))
-            .toString()
-            .trim()
-        ).scripts.postinstall;
-        process.chdir(esyPackagePath);
-        await exec(postInstall);
-        core.endGroup();
-        process.chdir(workingDirectory);
-        cachedPath = await toolCache.cacheDir(
-          esyPackagePath,
-          esyPackageName,
-          esyPackageVersion,
-          arch
-        );
-      }
-      core.addPath(path.join(cachedPath, "bin"));
-    }
-    fs.statSync(workingDirectory);
-    process.chdir(workingDirectory);
-    const installPath = [`${esyPrefix}/source`];
-    const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
-    core.startGroup("Restoring install cache");
-    const installCacheKey = await cache.restoreCache(
-      installPath,
-      installKey,
-      []
-    );
-    if (installCacheKey) {
-      console.log("Restored the install cache");
-    }
-    core.endGroup();
-
-    await runEsyCommand("Run esy install", ["install"]);
-
-    if (installCacheKey != installKey) {
-      await cache.saveCache(installPath, installKey);
-    }
-
-    const storeVersion = getEsyStoreVersion();
-    const esy3 = fs
-      .readdirSync(esyPrefix)
-      .filter((name: string) => name.length > 0 && name[0] === storeVersion)
-      .sort()
-      .pop();
-
-    const depsPath = [path.join(esyPrefix, esy3!, "i")];
-    const buildKey = `build-${platform}-${arch}-${cacheKey}`;
-
-    core.startGroup("Restoring build cache");
-    const buildCacheKey = await cache.restoreCache(depsPath, buildKey, []);
-    if (buildCacheKey) {
-      console.log("Restored the build cache");
-    }
-    core.endGroup();
-
-    if (!buildCacheKey) {
-      await runEsyCommand("Run esy build-dependencies", ["build-dependencies"]);
-    }
-
-    await runEsyCommand("Run esy build", ["build"]);
-
-    if (buildCacheKey != buildKey) {
-      await cache.saveCache(depsPath, buildKey);
-    }
-
-    // TODO: support cleanup + manifest
-    // Need to improve how subcommands are called
-    // --prefix after cleanup subcommand doesn't work
-    // --prefix prepended doesn't work with any other sub-command
-    // if (!manifestKey && !buildCacheKey) {
-    //   await runEsyCommand("Run esy cleanup", ["cleanup", "."]);
-    // }
-  } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(error.message);
+  if (setupEsy) {
+    let tarballUrl, checksum, esyPackageVersion, esyPackageName;
+    if (!setupEsyVersion || !setupEsyShaSum || !setupEsyTarball) {
+      const meta = getEsyDownloadArtifactsMeta(setupEsyNPMPackageName);
+      tarballUrl = meta.tarballUrl;
+      checksum = meta.shasum;
+      esyPackageVersion = meta.version;
+      esyPackageName = meta.name;
     } else {
-      core.setFailed(util.inspect(error));
+      tarballUrl = setupEsyTarball;
+      esyPackageVersion = setupEsyVersion;
+      checksum = setupEsyShaSum;
+      esyPackageName = setupEsyNPMPackageName;
     }
+    let cachedPath = toolCache.find(esyPackageName, esyPackageVersion, arch);
+    if (cachedPath === "") {
+      console.log("Fetching tarball from", tarballUrl);
+      const downloadedEsyNPMTarball = await toolCache.downloadTool(tarballUrl);
+      const checksumAlgo = "sha1";
+      const computedChecksum = await computeChecksum(
+        downloadedEsyNPMTarball,
+        checksumAlgo
+      );
+      if (computedChecksum !== checksum) {
+        throw new Error(
+          `Downloaded by checksum failed. url: ${setupEsyTarball} downloadPath: ${downloadedEsyNPMTarball} checksum expected: ${checksum} checksum computed: ${computedChecksum} checksum algorithm: ${checksumAlgo}`
+        );
+      } else {
+        console.log(
+          "Checksum validation succeeded. Downloaded tarball's checksum is:",
+          checksum
+        );
+      }
+
+      const extractedEsyNPM = await toolCache.extractTar(
+        downloadedEsyNPMTarball
+      );
+      core.startGroup("Running postinstall");
+      const esyPackagePath = path.join(extractedEsyNPM, "package");
+      const postInstall = JSON.parse(
+        fs
+          .readFileSync(path.join(esyPackagePath, "package.json"))
+          .toString()
+          .trim()
+      ).scripts.postinstall;
+      process.chdir(esyPackagePath);
+      await exec(postInstall);
+      core.endGroup();
+      process.chdir(workingDirectory);
+      cachedPath = await toolCache.cacheDir(
+        esyPackagePath,
+        esyPackageName,
+        esyPackageVersion,
+        arch
+      );
+    }
+    core.addPath(path.join(cachedPath, "bin"));
   }
+  fs.statSync(workingDirectory);
+  process.chdir(workingDirectory);
+  const installPath = [`${esyPrefix}/source`];
+  const installKey = `source-${platform}-${arch}-${sourceCacheKey}`;
+  core.startGroup("Restoring install cache");
+  const installCacheKey = await cache.restoreCache(installPath, installKey, []);
+  if (installCacheKey) {
+    console.log("Restored the install cache");
+  }
+  core.endGroup();
+
+  await runEsyCommand("Run esy install", ["install"]);
+
+  if (installCacheKey != installKey) {
+    await cache.saveCache(installPath, installKey);
+  }
+
+  const storeVersion = getEsyStoreVersion();
+  const esy3 = fs
+    .readdirSync(esyPrefix)
+    .filter((name: string) => name.length > 0 && name[0] === storeVersion)
+    .sort()
+    .pop();
+
+  const depsPath = [path.join(esyPrefix, esy3!, "i")];
+  const buildKey = `build-${platform}-${arch}-${cacheKey}`;
+
+  core.startGroup("Restoring build cache");
+  const buildCacheKey = await cache.restoreCache(depsPath, buildKey, []);
+  if (buildCacheKey) {
+    console.log("Restored the build cache");
+  }
+  core.endGroup();
+
+  if (!buildCacheKey) {
+    await runEsyCommand("Run esy build-dependencies", ["build-dependencies"]);
+  }
+
+  await runEsyCommand("Run esy build", ["build"]);
+
+  if (buildCacheKey != buildKey) {
+    await cache.saveCache(depsPath, buildKey);
+  }
+
+  // TODO: support cleanup + manifest
+  // Need to improve how subcommands are called
+  // --prefix after cleanup subcommand doesn't work
+  // --prefix prepended doesn't work with any other sub-command
+  // if (!manifestKey && !buildCacheKey) {
+  //   await runEsyCommand("Run esy cleanup", ["cleanup", "."]);
+  // }
 }
 
 async function uncompress(
@@ -340,6 +287,7 @@ async function uncompress(
       .on("error", reject);
   });
 }
+
 async function compress(dir: string, outputFile: string): Promise<void> {
   return new Promise((resolve, reject) => {
     tar
@@ -349,7 +297,19 @@ async function compress(dir: string, outputFile: string): Promise<void> {
       .on("error", reject);
   });
 }
+
 async function prepareNPMArtifacts() {
+  if (!compilerVersion) {
+    throw new Error(
+      "Prepare bundle-npm-artifacts needs `ocaml-compiler-version` field to be set in github actions"
+    );
+  }
+
+  if (!staticCompilerVersion) {
+    throw new Error(
+      "Prepare bundle-npm-artifacts needs `ocaml-static-compiler-version` field to be set in github actions"
+    );
+  }
   const statusCmd = manifestKey ? `esy ${manifestKey} status` : "esy status";
   try {
     const manifestFilePath = JSON.parse(
@@ -359,7 +319,6 @@ async function prepareNPMArtifacts() {
     if (manifest.esy?.release) {
       const command = ["npm-release"];
       if (manifest.esy?.release?.rewritePrefix) {
-        const compilerVersion = getCompilerVersion();
         command.push("--ocaml-version");
         command.push(compilerVersion);
       }
@@ -403,6 +362,18 @@ async function prepareNPMArtifacts() {
 }
 
 async function bundleNPMArtifacts() {
+  if (!compilerVersion) {
+    throw new Error(
+      "Prepare bundle-npm-artifacts needs `ocaml-compiler-version` field to be set in github actions"
+    );
+  }
+
+  if (!staticCompilerVersion) {
+    throw new Error(
+      "Prepare bundle-npm-artifacts needs `ocaml-static-compiler-version` field to be set in github actions"
+    );
+  }
+
   fs.statSync(workingDirectory);
   process.chdir(workingDirectory);
   const releaseFolder = path.join(workingDirectory, "_npm-release");
@@ -410,26 +381,19 @@ async function bundleNPMArtifacts() {
   const { artifacts } = await artifact.listArtifacts();
 
   // TODO: filter out artifacts that dont have esy-npm-release-* prefix in their name
-  const artifactFoldersList = await Promise.all(
-    artifacts.map(async (a: Artifact) => {
-      const folderName = `platform-${a.name}`;
-      const folderPath = path.join(releaseFolder, folderName);
-      await artifact.downloadArtifact(a.id, {
-        path: folderPath,
-      });
-      const npmTarballPath = path.join(folderPath, "npm-tarball.tgz");
-      await uncompress(folderPath, npmTarballPath, 1);
-      fs.rmSync(npmTarballPath);
-      return folderName;
-    })
-  );
-  const artifactFolders = artifactFoldersList.reduce(
-    (acc: string[], folderName: string) => {
-      acc.push(folderName);
-      return acc;
-    },
-    []
-  );
+  const artifactFoldersList: string[] = [];
+  for (let i = 0; i < artifacts.length; ++i) {
+    const a: Artifact = artifacts[i];
+    const folderName = `platform-${a.name}`;
+    const folderPath = path.join(releaseFolder, folderName);
+    await artifact.downloadArtifact(a.id, {
+      path: folderPath,
+    });
+    const npmTarballPath = path.join(folderPath, "npm-tarball.tgz");
+    await uncompress(folderPath, npmTarballPath, 1);
+    fs.rmSync(npmTarballPath);
+    artifactFoldersList.push(folderName);
+  }
   try {
     const esyInstallReleaseJS = "esyInstallRelease.js";
     fs.cpSync(
@@ -473,11 +437,6 @@ async function bundleNPMArtifacts() {
     mainPackageJson.esy.release &&
     mainPackageJson.esy.release.rewritePrefix;
 
-  const compilerVersion = getCompilerVersion();
-  console.log("Found compiler version", compilerVersion);
-  const staticCompilerVersion = getCompilerVersion("static.esy");
-  console.log("Found static compiler version", staticCompilerVersion);
-
   const version = cli("git describe --tags --always");
 
   const packageJson = JSON.stringify(
@@ -489,8 +448,8 @@ async function bundleNPMArtifacts() {
       repository: mainPackageJson.repository,
       scripts: {
         postinstall: rewritePrefix
-          ? `node -e \"process.env['OCAML_VERSION'] = process.platform == 'linux' ? '${staticCompilerVersion}-musl.static.flambda': '${compilerVersion}'; process.env['OCAML_PKG_NAME'] = 'ocaml'; process.env['ESY_RELEASE_REWRITE_PREFIX']=true; require('./postinstall.js')\"`
-          : "require('./postinstall.js')\"",
+          ? `node -e \"process.env['OCAML_VERSION'] = process.platform == 'linux' ? '${staticCompilerVersion}': '${compilerVersion}'; process.env['OCAML_PKG_NAME'] = 'ocaml'; process.env['ESY_RELEASE_REWRITE_PREFIX']=true; require('./postinstall.js')\"`
+          : "node ./postinstall.js",
       },
       bin: bins,
       files: [
@@ -498,7 +457,7 @@ async function bundleNPMArtifacts() {
         "bin/",
         "postinstall.js",
         "esyInstallRelease.js",
-      ].concat(artifactFolders),
+      ].concat(artifactFoldersList),
     },
     null,
     2
@@ -578,10 +537,20 @@ ECHO You need to have postinstall enabled`;
   core.endGroup();
 }
 
-if (prepareNPMArtifactsMode) {
-  prepareNPMArtifacts();
-} else if (bundleNPMArtifactsMode) {
-  bundleNPMArtifacts();
-} else {
-  main();
+async function main() {
+  if (prepareNPMArtifactsMode) {
+    return prepareNPMArtifacts();
+  } else if (bundleNPMArtifactsMode) {
+    return bundleNPMArtifacts();
+  } else {
+    return build();
+  }
 }
+
+main().catch((error) => {
+  if (error instanceof Error) {
+    core.setFailed(error.message);
+  } else {
+    core.setFailed(util.inspect(error));
+  }
+});
