@@ -54,9 +54,14 @@ workingDirectory = path.isAbsolute(workingDirectory)
   ? workingDirectory
   : path.join(process.cwd(), workingDirectory);
 
+function cli(cmd: string) {
+  console.log(`cli: ${cmd}`);
+  return cp.execSync(cmd).toString().trim();
+}
+
 function getEsyCLIVersion() {
   const cmd = "esy --version";
-  return cp.execSync(cmd).toString().trim();
+  return cli(cmd);
 }
 
 function getEsyStoreVersion() {
@@ -106,7 +111,7 @@ function getCompilerVersion(sandbox?: string) {
   const ocamlcVersionCmd = sandbox
     ? `esy ${sandbox} ocamlc --version`
     : "esy ocamlc --version";
-  return cp.execSync(ocamlcVersionCmd).toString();
+  return cli(ocamlcVersionCmd);
 }
 
 async function run(name: string, command: string, args: string[]) {
@@ -468,16 +473,12 @@ async function bundleNPMArtifacts() {
     mainPackageJson.esy.release &&
     mainPackageJson.esy.release.rewritePrefix;
 
-  function exec(cmd: string) {
-    console.log(`exec: ${cmd}`);
-    return cp.execSync(cmd).toString().trim();
-  }
-  const version = exec("git describe --tags --always");
-
   const compilerVersion = getCompilerVersion();
   console.log("Found compiler version", compilerVersion);
   const staticCompilerVersion = getCompilerVersion("static.esy");
   console.log("Found static compiler version", staticCompilerVersion);
+
+  const version = cli("git describe --tags --always");
 
   const packageJson = JSON.stringify(
     {
