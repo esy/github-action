@@ -127,6 +127,15 @@ sources of the dependencies.
 The following inputs are optional. When missing, the actions will fallback to
 use defaults are mentioned below.
 
+#### `ocaml-compiler-version`
+
+We need the compiler version to calculate the prefix path during preparation 
+of NPM tarballs for different platforms and bundling into one tarball later. 
+In the former stage, we need to rewrite prefixes and in the latter, to generate 
+the postinstall.js script which would correctly rewrite the prefix again on the 
+target machine. Mandatory only when in `prepare-npm-artifacts-mode` and `bundle-npm-artifacts-mode`. 
+These modes are explained later below.
+
 #### `esy-prefix`
 
 Path where esy can setup the cache. Default: `$HOME/.esy`
