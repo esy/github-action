@@ -26,15 +26,6 @@ inputs:
       logic while both preparation mode, and while postinstall scripts are
       generated during bundling mode.
     required: false
-  ocaml-static-compiler-version:
-    description:
-      Version of static ocaml compiler (in semver. Eg. 5.1.0-musl.static.flambda
-      or 4.10.1000-musl.static.flambda). Optional, but mandatory if
-      prepare-npm-artifacts-mode and bundle-npm-artifacts-mode is used. This is
-      because, these version strings affect the relocatability logic while both
-      preparation mode, and while postinstall scripts are generated during
-      bundling mode.
-    required: false
   prepare-npm-artifacts-mode:
     description:
       Runs a steps that prepare artifacts for release the app to NPM. These
