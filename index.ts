@@ -35,7 +35,6 @@ const manifestKey = core.getInput("manifest");
 const prepareNPMArtifactsMode = core.getInput("prepare-npm-artifacts-mode");
 const bundleNPMArtifactsMode = core.getInput("bundle-npm-artifacts-mode");
 const compilerVersion = core.getInput("ocaml-compiler-version");
-const staticCompilerVersion = core.getInput("ocaml-static-compiler-version");
 const customPostInstallJS = core.getInput("postinstall-js");
 const setupEsy = core.getInput("setup-esy") || true; // Default behaviour is to install esy for user and cache it
 const setupEsyTarball = core.getInput("setup-esy-tarball");
@@ -305,11 +304,6 @@ async function prepareNPMArtifacts() {
     );
   }
 
-  if (!staticCompilerVersion) {
-    throw new Error(
-      "Prepare bundle-npm-artifacts needs `ocaml-static-compiler-version` field to be set in github actions"
-    );
-  }
   const statusCmd = manifestKey ? `esy ${manifestKey} status` : "esy status";
   try {
     const manifestFilePath = JSON.parse(
@@ -365,12 +359,6 @@ async function bundleNPMArtifacts() {
   if (!compilerVersion) {
     throw new Error(
       "Prepare bundle-npm-artifacts needs `ocaml-compiler-version` field to be set in github actions"
-    );
-  }
-
-  if (!staticCompilerVersion) {
-    throw new Error(
-      "Prepare bundle-npm-artifacts needs `ocaml-static-compiler-version` field to be set in github actions"
     );
   }
 
@@ -448,7 +436,7 @@ async function bundleNPMArtifacts() {
       repository: mainPackageJson.repository,
       scripts: {
         postinstall: rewritePrefix
-          ? `node -e \"process.env['OCAML_VERSION'] = process.platform == 'linux' ? '${staticCompilerVersion}': '${compilerVersion}'; process.env['OCAML_PKG_NAME'] = 'ocaml'; process.env['ESY_RELEASE_REWRITE_PREFIX']=true; require('./postinstall.js')\"`
+          ? `node -e \"process.env['OCAML_VERSION'] = '${compilerVersion}'; process.env['OCAML_PKG_NAME'] = 'ocaml'; process.env['ESY_RELEASE_REWRITE_PREFIX']=true; require('./postinstall.js')\"`
           : "node ./postinstall.js",
       },
       bin: bins,
